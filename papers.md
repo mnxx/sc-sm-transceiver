@@ -1,5 +1,34 @@
 # PAPERS
 
+## MAIN PAPERS
+
+### A Low-Complexity Detection Scheme for Generalized Spatial Modulation Aided Single Carrier Systems
+    - GSM combines SM and V-BLAST
+    - compared to PIC-R-SIC, scheme offers near ML detection performance while avoiding complicated matrix operations
+    - performance improvement in particular in rank-deficient channel scenarios
+    - GSM higher spectral efficiency compared to conventional SM
+    - BER performance of GSM dominated by the detectors
+    - ZP-aided SM-SC scheme is prefered over CP-aided SM-SC and SM-OFDM schemes in terms of BER
+    - PIC-R-SIC: projection matrix, orthogonal to sub-channel matrix
+      - GSM sytem: N_u out of N_t tas activated each time slot
+      - PIC-R-SIC: if (K+P-1)N_r =< (K-1)N_t, G_I_k may become rank deficient causing an inaccurate detection
+      - conventional search algorithms, sphere decoding and M-algorithm aided QR-decompositionnot, not effectively applicable
+      - possible rank-deficiency limits application of M-algorithm aided QR-decomposition
+      - sphere decoding achieves near-ML performance, but introduces high complexity
+      - proposed scheme: QR-decomposition avoided - single stream ML detection employed
+      - first step: all possible candidate vectors are generated, based on square Euclidean distances
+      - sort in ascended order and M smallest metrics out of Q are selected
+      - M legitimate GSM vectors D_1 corresponding to the selected metrics e_1 are obtained
+      - second step: second term of receiver signal is detected
+      - M^ combinations of x_1 and x_2 corresponding to smallest metrics e_2 are obtained
+      - repeat until Kth step
+      - complexity of scheme increases with M
+      - still achieves complexity reduction of 56% to SD and 78% to PIC-R-SIC and 98% to ML at K=4
+      - performance increases with M
+      - trade-off between performance and complexity
+    - scheme offers better BER performance than PIC-R-SIC with reduced complexity
+    - with increasing M, scheme approaches ML detector
+
 ## BACKGROUND PAPERS
 
 ### M-Algorithm-Based Optimal Detectors for Spatial Modulation (Online / Journal of Communications)
