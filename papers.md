@@ -12,7 +12,7 @@
     - PIC-R-SIC: projection matrix, orthogonal to sub-channel matrix
       - GSM sytem: N_u out of N_t tas activated each time slot
       - PIC-R-SIC: if (K+P-1)N_r =< (K-1)N_t, G_I_k may become rank deficient causing an inaccurate detection
-      - conventional search algorithms, sphere decoding and M-algorithm aided QR-decompositionnot, not effectively applicable
+      - conventional search algorithms, sphere decoding and M-algorithm aided QR-decomposition, not effectively applicable
       - possible rank-deficiency limits application of M-algorithm aided QR-decomposition
       - sphere decoding achieves near-ML performance, but introduces high complexity
       - proposed scheme: QR-decomposition avoided - single stream ML detection employed
