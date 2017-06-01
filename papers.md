@@ -31,6 +31,19 @@
 
 ## BACKGROUND PAPERS
 
+### An Improved QRD-M Algorithm in MIMO Communications
+    - >> understand M algorithm
+      - in the sense of minimizing error probability, MLSD is the optimal
+      - exhaustive search through whole alphabet is infeasible/costly
+      - perform QR decomposition of channel matrix B
+      - Q is 2N_r x 2N_r, and R is 2N_r x 2N_t
+      - in R we have T, a 2N_t x 2N_t up-triangle matrix
+      - r = Bs + n becomes r~ = Ts + n~, with r~ = Q* r and n~ = Q* n
+      - since T is an up-triangle matrix, it can be resolved by tree traversal methods in graph theory
+      - QRD-M is a breadth-first tree traversal algorithm, reducing system complexity by keeping only M candidates
+      - candidates have best accumulated metrics at each tree searching stage
+      
+
 ### M-Algorithm-Based Optimal Detectors for Spatial Modulation (Online / Journal of Communications)
     - M-algorithm reduces complexity of ML detection by combining with the QR decompostition and tree search structure
     - modified M-ML detector proposed with optimal BER performance
