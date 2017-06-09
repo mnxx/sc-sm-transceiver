@@ -1,7 +1,7 @@
 # teh plan:
 
 - [ ] read papers
-- [v] KIT slides
+- [x] KIT slides
 - [ ] split transmission into classes?
 - [ ] implement IQ
 - [ ] implement source
