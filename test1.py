@@ -15,25 +15,21 @@ import scipy.linalg as lin
 import matplotlib.pyplot as plt
 
 
-class QPSKModulation:
-    """ Generate frames with QPSK modulated signals. """
-    
+class Modulation:
+    """" Modulation super class containing standard modulation methods """
+
     def __init__(self, symbols_per_frame):
         self.symbols_per_frame = symbols_per_frame
-        # For now: create two frames - training sequence and data frame.
-        qpsk_map = np.exp(1j * np.array([0, np.pi/2, np.pi, -np.pi/2]) + 1j * np.pi / 4)
-        self.symbol_indices_train = np.random.randint(0, qpsk_map.size, symbols_per_frame)
-        self.symbol_indices_data = np.random.randint(0, qpsk_map.size, symbols_per_frame)
-        s_train = qpsk_map[self.symbol_indices_train]
-        s_data = qpsk_map[self.symbol_indices_data]
-        self.frameList = [s_train, s_data]
-
+        
     def getTrainingIndices(self):
         return self.symbol_indices_train
 
     def getDataIndices(self):
         return self.symbol_indices_data
 
+    def getMappedTrainingSeq(self):
+        return self.s_train
+        
     def plotModulation(self):
         # Plot the data in the given frames.
         for index, frame in enumerate(self.frameList):
@@ -50,7 +46,7 @@ class QPSKModulation:
             frame = np.concatenate((frame[-cp_length:], frame))
             self.frameList[index] = frame
             #self.frameListCP.append(frame)
-            
+
     def concatenateFrames(self):
         # Concatenate the frames to a single list.
         #if not self.frameListCP:
@@ -65,6 +61,31 @@ class QPSKModulation:
         plt.margins(y=0.1, x=0)
         plt.title("|S|^2")
         plt.show()
+
+class BPSKModulation(Modulation):
+    """ Generate frames with BPSK modulated signals. """
+
+    def modulateBPSK(self):
+        # For now: create two frames - training sequence and data frame.
+        bpsk_map = np.array([1, -1])
+        self.symbol_indices_train = np.random.randint(0, bpsk_map.size, self.symbols_per_frame)
+        self.symbol_indices_data = np.random.randint(0, bpsk_map.size, self.symbols_per_frame)
+        self.s_train = bpsk_map[self.symbol_indices_train]
+        self.s_data = bpsk_map[self.symbol_indices_data]
+        self.frameList = [self.s_train, self.s_data]
+
+
+class QPSKModulation(Modulation):
+    """ Generate frames with QPSK modulated signals. """
+
+    def modulateQPSK(self):
+        # For now: create two frames - training sequence and data frame.
+        qpsk_map = np.exp(1j * np.array([0, np.pi/2, np.pi, -np.pi/2]) + 1j * np.pi / 4)
+        self.symbol_indices_train = np.random.randint(0, qpsk_map.size, self.symbols_per_frame)
+        self.symbol_indices_data = np.random.randint(0, qpsk_map.size, self.symbols_per_frame)
+        self.s_train = qpsk_map[self.symbol_indices_train]
+        self.s_data = qpsk_map[self.symbol_indices_data]
+        self.frameList = [self.s_train, self.s_data]
 
 
 class Channel:
@@ -120,16 +141,25 @@ class Detector:
         # Estimate H
         self.H = np.fft.fft(rxTrainingSeq) / np.fft.fft(txTrainingSeq)
 
-    def frequencyDomainEq(self, cp_length, frameList):
+    def frequencyDomainEq(self, rx_data):
         # Equalize in the frequency domain using a Zero-Forcing approach.
         #r_data = r[2 * N_CP + N: 2 * N_CP + 2 * N]
-        #frame_data = signal
-        rx_Data = np.fft.fft(frameList)
+        rx_Data = np.fft.fft(rx_data)
         rx_Data_Eq = rx_Data / self.H
         return np.fft.ifft(rx_Data_Eq)
 
+    def bpsk_detector(self, x):
+        # Detect the corresponding BPSK-symbols.
+        index = np.zeros(len(x), dtype=int)
+        for i, sym in enumerate(x):
+            if sym.real >= 0:
+                index[i] = 0
+            else:
+                index[i] = 1
+        return index
+    
     def qpsk_detector(self, x):
-    # Detect the corresponding QPSK-symbol.     
+        # Detect the corresponding QPSK-symbols.     
         index = np.zeros(len(x), dtype=int)
         for i, sym in enumerate(x):
             if sym.real >= 0 and sym.imag >= 0:
@@ -184,12 +214,20 @@ def main():
     
     N = 256
     N_CP = 256 // 4
-    SNR = 20
+    SNR = 10
     CHANNEL_LEN = 256 // 8
+
+    FILE = open("send.txt","r")
+    TX_DATA = FILE.read()
+    #print(TX_DATA)
     
-    mod = QPSKModulation(N)
+    #mod = QPSKModulation(N)
+    #mod.modulateQPSK()
     #mod.plotModulation()
 
+    mod = BPSKModulation(N)
+    mod.modulateBPSK()
+    
     mod.addCyclicPrefix(N_CP)
     
     signal = mod.concatenateFrames()
@@ -201,18 +239,19 @@ def main():
 
     detector = Detector(channel.signal)
     rxTrainingSeq = detector.extractTrainingSeq(N, N_CP)
-    rxData = detector.extractData(N, N_CP)
-    detector.estimateChannel(mod.getTrainingIndices(),rxTrainingSeq)
-    rxDataEq = detector.frequencyDomainEq(N_CP, rxData)
+    rx_data = detector.extractData(N, N_CP)
+    detector.estimateChannel(mod.getMappedTrainingSeq(),rxTrainingSeq)
+    rx_data_eq = detector.frequencyDomainEq(rx_data)
     
-    rx_symbol_indices_data_noeq = detector.qpsk_detector(rxData)
+    #rx_symbol_indices_data_noeq = detector.qpsk_detector(rx_data)
+    rx_symbol_indices_data_noeq = detector.bpsk_detector(rx_data)
     SER_noeq = sum(rx_symbol_indices_data_noeq != mod.getDataIndices()) / len(mod.getDataIndices())
     print("SER without equalization:", SER_noeq)
-
-    print(rx_symbol_indices_data_noeq)
-    print(mod.getDataIndices())
     
-    rx_symbol_indices_data_eq = detector.qpsk_detector(rxDataEq)
+    #rx_symbol_indices_data_eq = detector.qpsk_detector(rx_data_eq)
+    rx_symbol_indices_data_eq = detector.bpsk_detector(rx_data_eq)
+    #print(rx_symbol_indices_data_eq)
+    #print(mod.getDataIndices())
     SER_eq = sum(rx_symbol_indices_data_eq != mod.getDataIndices()) / len(mod.getDataIndices())
     print("SER with equalization:", SER_eq)
     
