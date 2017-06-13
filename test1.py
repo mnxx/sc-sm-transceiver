@@ -9,6 +9,7 @@
 # limitations under the License.
 
 
+import sys
 import numpy as np
 import scipy.signal as sig
 import scipy.linalg as lin
@@ -139,7 +140,13 @@ class Detector:
         
     def estimateChannel(self, txTrainingSeq, rxTrainingSeq):
         # Estimate H
-        self.H = np.fft.fft(rxTrainingSeq) / np.fft.fft(txTrainingSeq)
+        txTrainingSeqF = np.fft.fft(txTrainingSeq)
+        try:
+            self.H = np.fft.fft(rxTrainingSeq) / txTrainingSeqF
+        except:
+            e = sys.exc_info()[0]
+            write_to_page("<p>Error: %s</p>" % e)
+            self.H = 1
 
     def frequencyDomainEq(self, rx_data):
         # Equalize in the frequency domain using a Zero-Forcing approach.
