@@ -57,10 +57,10 @@ def main():
     #CN_cov = [[1, 0], [0, 1]]
 
     OM = np.array([[0 + 0j], [0 + 0j]])
-    print(OM)
+    #print(OM)
     #x = np.random.multivariate_normal(CN_mean, CN_cov, 1)
     H_0 = np.random.randn(2,1) + 1j * np.random.randn(2,1)
-    print(H_0)
+    #print(H_0.size)
     H_1 = np.random.randn(2,1) + 1j * np.random.randn(2,1)
     #print(H_1)
     H_2 = np.random.randn(2,1) + 1j * np.random.randn(2,1)
@@ -68,11 +68,32 @@ def main():
     
     # H: (K+P-1)N_r x KN_t
     # General Channel Matrix containing the submatrices of the channel.
-    rowList = [H_0, H_1, H_2, OM, OM, OM, OM, OM, OM, OM]
-    columnList = [OM, OM, OM, OM, OM, OM, OM]
-    #channelMatrix = lin.toeplitz([1,2,3,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0])
-    channelMatrix = lin.toeplitz(rowList, columnList)
-    #print(channelMatrix.size)
+    #rowList = [H_0, H_1, H_2, OM, OM, OM, OM, OM, OM, OM]
+    #columnList = [OM, OM, OM, OM]
+    #channelMatrix = lin.toeplitz([1,2,3,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0])
+    #channelMatrix = lin.toeplitz(rowList, columnList)
+    #print(channelMatrix[0])
+    #print(channelMatrix[1])
+    #print(channelMatrix[2])
+
+    inputs = (H_0, H_1, H_2, OM)
+
+    input_len = len(inputs)
+    number_rows = 10 #input_len * 2 - 1
+    m, n = H_0.shape
+    print(input_len)
+    print(number_rows)
+    print(m)
+    print(n)
+    channelMatrix = np.zeros((number_rows, m, input_len, n), dtype = H_0.dtype)
+    for index, subMatrix in enumerate(inputs):
+        for element in range(input_len):
+            channelMatrix[index + element, : , element, :] = subMatrix
+
+    channelMatrix.shape = (number_rows * m, input_len * n)
+
+    print(channelMatrix)
+        
 
     # x: KN_t x 1 // x_k: N_t x 1
     # Signal Vector. No spatial information for now.
