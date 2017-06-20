@@ -41,15 +41,17 @@ def detector(rxVector, H):
             possibleSymbolVector = list(x)
             possibleSymbolVector.append(possibleSymbol)
             xm = np.vstack(np.asarray(possibleSymbolVector))
-            h = H[step][: step + 1]
+            # As all H_x block-submatrices are 2x1, 2 rows are needed - ADAPT FOR NxM!
+            h = H[2 * step : 2 * step + 2, : step + 1]
+            #print(h)
             #print(str(h.size) + "  " + str(h.shape))
-            h = h.reshape(1, h.size)
+            #h = h.reshape(1, h.size)
             # Compute the metrics for each candidate vector.
 
             """ As Y_x, H_x are 2x1 blocks, the order is wrong! """
             
-            e_index = sum(eList) + np.linalg.norm(y - h.dot(xm))
-            print(e_index)
+            e_index = sum(eList) + np.linalg.norm(rxVector[2 * step : 2 * step + 2] - h.dot(xm))
+            #print(e_index)
             em.append(e_index)            
         # Obtain corresponding M candidate vectors.
         # Keep the M elements with the smallest metrics: M = 1.
@@ -67,7 +69,13 @@ def bpsk(symbols_per_frame):
     #symbol_indices_train = np.random.randint(0, bpsk_map.size, symbols_per_frame)
     symbol_indices_data = np.random.randint(0, bpsk_map.size, symbols_per_frame) 
     #s_train = bpsk_map[symbol_indices_train]
-    return np.array([bpsk_map[symbol_indices_data]])
+    return bpsk_map[symbol_indices_data]
+
+def addZeroPrefix(symbol_list, prefix_len):
+    while prefix_len:
+        symbol_list.insert(0, 0)
+        prefix_len = prefix_len - 1
+    return symbol_list
 
 def noise(elements_per_frame):
     return np.random.randn(elements_per_frame, 1) + 1j * np.random.randn(elements_per_frame, 1)
@@ -86,8 +94,11 @@ def main():
     # Number of multipath links.
     P = 3
     
-    # Length of the Zero-Prefix
+    # Length of the Zero-Prefix.
     ZP_len = P-1
+
+    # Signal to Noise Ratio.
+    SNR = -10
     
     # H_t: tN_r x tN_t
     # The submatrices of H. Elements are complex Gaussian distributed.
@@ -134,12 +145,15 @@ def main():
 
     # x: KN_t x 1 // x_k: N_t x 1
     # Signal Vector. No spatial information for now.
-    signalVector = np.transpose(bpsk(K))
-    print(signalVector)
+    signalVector = bpsk(K)
+    # Add a Zero-Prefix with length P-1
+    signalList = addZeroPrefix(signalVector.tolist(), ZP_len)
+    signalVector = np.transpose(np.array([signalList]))
+    #print(signalVector)
     
     # n: (K+P-1)N_r x 1
     # Noise Vector. Elements are complex Gaussian distributed.
-    noiseVector = noise((K+P-1)*N_r)
+    noiseVector = np.sqrt(10**(-SNR/10) / 2) * noise((K+P-1)*N_r)
     #print(noiseVector)
     
     # Y: (K+P-1)N_r x 1
@@ -147,8 +161,13 @@ def main():
     #print(rxVector)
 
     # DETECT.
-    estimatedVector = detector(rxVector, channelMatrix)
-    print(np.asarray(estimatedVector))
+    #estimatedVector = detector(rxVector, channelMatrix)
+    #print(estimatedVector)
+    #print(np.asarray(estimatedVector))
+
+    # Show if any errors have occured.
+    #estimatedVector = np.asarray(estimatedVector)
+    #print(np.array_equal(signalVector, estimatedVector))
     
 
 if __name__ == '__main__':
