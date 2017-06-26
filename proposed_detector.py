@@ -98,7 +98,7 @@ def main():
     ZP_len = P-1
 
     # Signal to Noise Ratio.
-    SNR = -10
+    SNR = 10
     
     # H_t: tN_r x tN_t
     # The submatrices of H. Elements are complex Gaussian distributed.
@@ -108,11 +108,11 @@ def main():
     #OM = np.array([[0 + 0j], [0 + 0j]])
     #print(OM)
     #x = np.random.multivariate_normal(CN_mean, CN_cov, 1)
-    H_0 = np.random.randn(2,1) + 1j * np.random.randn(2,1)
+    H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,1) + 1j * np.random.randn(2,1))
     #print(H_0.size)
-    H_1 = np.random.randn(2,1) + 1j * np.random.randn(2,1)
+    H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,1) + 1j * np.random.randn(2,1))
     #print(H_1)
-    H_2 = np.random.randn(2,1) + 1j * np.random.randn(2,1)
+    H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,1) + 1j * np.random.randn(2,1))
 
     
     # H: (K+P-1)N_r x KN_t
@@ -145,10 +145,12 @@ def main():
 
     # x: KN_t x 1 // x_k: N_t x 1
     # Signal Vector. No spatial information for now.
-    signalVector = bpsk(K)
+    signalList = bpsk(K)
     # Add a Zero-Prefix with length P-1
-    signalList = addZeroPrefix(signalVector.tolist(), ZP_len)
+    prefixedSignalList = addZeroPrefix(signalList.tolist(), ZP_len)
+    # Transpose 
     signalVector = np.transpose(np.array([signalList]))
+    prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
     #print(signalVector)
     
     # n: (K+P-1)N_r x 1
@@ -161,13 +163,13 @@ def main():
     #print(rxVector)
 
     # DETECT.
-    #estimatedVector = detector(rxVector, channelMatrix)
+    estimatedVector = detector(rxVector, channelMatrix)
     #print(estimatedVector)
     #print(np.asarray(estimatedVector))
 
     # Show if any errors have occured.
-    #estimatedVector = np.asarray(estimatedVector)
-    #print(np.array_equal(signalVector, estimatedVector))
+    estimatedVector = np.asarray(estimatedVector)
+    print(np.array_equal(signalVector, estimatedVector))
     
 
 if __name__ == '__main__':
