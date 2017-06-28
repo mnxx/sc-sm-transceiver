@@ -83,7 +83,7 @@ def noise(elements_per_frame):
 
 def main():
     # Number of transmit antennas.
-    #N_t = 1
+    N_t = 2
 
     # Number of reception antennas.
     N_r = 2
@@ -108,11 +108,11 @@ def main():
     #OM = np.array([[0 + 0j], [0 + 0j]])
     #print(OM)
     #x = np.random.multivariate_normal(CN_mean, CN_cov, 1)
-    H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,1) + 1j * np.random.randn(2,1))
+    H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,2) + 1j * np.random.randn(2,2))
     #print(H_0.size)
-    H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,1) + 1j * np.random.randn(2,1))
+    H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,2) + 1j * np.random.randn(2,2))
     #print(H_1)
-    H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,1) + 1j * np.random.randn(2,1))
+    H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,2) + 1j * np.random.randn(2,2))
 
     
     # H: (K+P-1)N_r x KN_t
