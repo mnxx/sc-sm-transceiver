@@ -108,11 +108,11 @@ def main():
     #OM = np.array([[0 + 0j], [0 + 0j]])
     #print(OM)
     #x = np.random.multivariate_normal(CN_mean, CN_cov, 1)
-    H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,2) + 1j * np.random.randn(2,2))
+    H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
     #print(H_0.size)
-    H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,2) + 1j * np.random.randn(2,2))
+    H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
     #print(H_1)
-    H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(2,2) + 1j * np.random.randn(2,2))
+    H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
 
     
     # H: (K+P-1)N_r x KN_t
@@ -129,9 +129,11 @@ def main():
     # General Channel Matrix containing the submatrices of the channel.
     inputs = (H_0, H_1, H_2)
     # Number of columns is KN_t = input channel matrices + C.
-    number_columns = len(inputs) + 5
+    number_columns = K
+    #print(number_columns)
     # Number of rows is (K+P-1)N_r.
-    number_rows = 10
+    number_rows = (K + P - 1)
+    #print(number_rows)
     # All submatrices should have the same dimensions.
     nb_sub_rows, nb_sub_columns = H_0.shape
     # Create 4-dimensional matrix using the submatrices.
@@ -145,13 +147,13 @@ def main():
 
     # x: KN_t x 1 // x_k: N_t x 1
     # Signal Vector. No spatial information for now.
-    signalList = bpsk(K)
+    signalList = bpsk(K * N_t)
     # Add a Zero-Prefix with length P-1
     prefixedSignalList = addZeroPrefix(signalList.tolist(), ZP_len)
     # Transpose 
     signalVector = np.transpose(np.array([signalList]))
     prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
-    #print(signalVector)
+    print(signalVector)
     
     # n: (K+P-1)N_r x 1
     # Noise Vector. Elements are complex Gaussian distributed.
@@ -160,12 +162,12 @@ def main():
     
     # Y: (K+P-1)N_r x 1
     rxVector = channelMatrix.dot(signalVector) + noiseVector
-    #print(rxVector)
+    #print(rxVector.size)
 
     # DETECT.
     estimatedVector = detector(rxVector, channelMatrix)
     #print(estimatedVector)
-    #print(np.asarray(estimatedVector))
+    print(np.asarray(estimatedVector))
 
     # Show if any errors have occured.
     estimatedVector = np.asarray(estimatedVector)
