@@ -106,11 +106,11 @@ def main():
     #OM = np.array([[0 + 0j], [0 + 0j]])
     #print(OM)
     #x = np.random.multivariate_normal(CN_mean, CN_cov, 1)
-    H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
+    #H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
     #print(H_0.size)
-    H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
+    #H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
     #print(H_1)
-    H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
+    #H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
 
     
     # H: (K+P-1)N_r x KN_t
@@ -123,9 +123,17 @@ def main():
     #print(channelMatrix[1])
     #print(channelMatrix[2])
 
+    # If there is no multipath-propagation:
+    if P < 2:
+        # Do something.
+        print("No multipath-propagation.")
+        
     # H: (K+P-1)N_r x KN_t
     # General Channel Matrix containing the submatrices of the channel.
-    inputs = (H_0, H_1, H_2)
+    subMatrices = dict()
+    for index in range(0, P):
+        subMatrices[index] = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
+    #inputs = (H_0, H_1, H_2)
     # Number of columns is KN_t = input channel matrices + C.
     number_columns = K
     #print(number_columns)
@@ -133,10 +141,10 @@ def main():
     number_rows = (K + P - 1)
     #print(number_rows)
     # All submatrices should have the same dimensions.
-    nb_sub_rows, nb_sub_columns = H_0.shape
+    nb_sub_rows, nb_sub_columns = subMatrices[0].shape
     # Create 4-dimensional matrix using the submatrices.
-    channelMatrix = np.zeros((number_rows, nb_sub_rows, number_columns, nb_sub_columns), dtype = H_0.dtype)
-    for index, subMatrix in enumerate(inputs):
+    channelMatrix = np.zeros((number_rows, nb_sub_rows, number_columns, nb_sub_columns), dtype = subMatrices[0].dtype)
+    for index, subMatrix in subMatrices.items():
         for element in range(number_columns):
             channelMatrix[index + element, : , element, :] = subMatrix
     # Flatten the 4-dimensional matrix.
