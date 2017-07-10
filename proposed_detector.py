@@ -172,12 +172,20 @@ def main():
 
     # DETECT.
     estimatedVector = detector(rxVector, channelMatrix, N_r, N_t)
-    #print(estimatedVector)
+    #print(estimatedVector.flatten())
     #print(np.asarray(estimatedVector))
 
     # Show if any errors have occured.
     #estimatedVector = np.asarray(estimatedVector)
-    print(np.array_equal(signalVector, estimatedVector))
+    #print(np.array_equal(signalVector, estimatedVector))
+    signalVector = signalVector.flatten()
+    estimatedVector = estimatedVector.flatten()
+    count = 0
+    for index in range(0, len(signalVector)):
+        if signalVector[index] != estimatedVector[index]:
+            count += 1
+    
+    print(count)
     
 
 if __name__ == '__main__':
