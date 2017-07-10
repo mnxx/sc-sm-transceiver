@@ -11,6 +11,7 @@
 
 ### Right Now
 
-- fix dimensions
-- add transmit antenna
+- M > 1
+- zero prefix
 - efficiency analysis
+- sm symbol creation
