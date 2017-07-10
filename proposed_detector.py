@@ -23,19 +23,25 @@ import numpy as np
 
 
 def detector(rxVector, H, n_rows, n_columns):
-    # M algorithm: breadth-first search with M survivors.
-    M = 1
     # Possible symbols: FOR NOW, LIMITED ANTENNA INDEX INFORMATION FOR 2x2.
     symbolList = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]])
+    
+    # M algorithm: breadth-first search with M survivors.
+    M = 2
+    # E: List of lists - list of the metrics of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
+    E = []
+    # D: List of lists - list of the symbols of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
+    D = []
+    # Vector with lowest estimated metrics for each iteration.
+    e = []
     # Vector with the estimated symbols; grows with each iteration.
     x = []
-    # Vector with lowest estimated metrics for each iteration.
-    eList = []
+    
     # Repeat detection process K times
     for step, y in enumerate(rxVector[: 8]):
         # List of selected metrics.
-        em = []
-        # 
+        possibleMetrics = []
+        # Find the corresponding metrics.
         for possibleSymbol in symbolList:
             possibleSymbolVector = list(x)
             possibleSymbolVector.append(possibleSymbol)
@@ -51,16 +57,29 @@ def detector(rxVector, H, n_rows, n_columns):
             # Compute the metrics for each candidate vector.
             #print(np.transpose(xm))
             #xm = np.transpose(xm)
-            e_index = sum(eList) + np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))
+            metric = sum(eList) + np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))
             #print(e_index)
-            em.append(e_index)            
+            possibleMetrics.append(metric)            
         # Obtain corresponding M candidate vectors.
-        # Keep the M elements with the smallest metrics: M = 1.
-        best_metric_index = em.index(min(em))
+        # Keep the M elements with the smallest metrics. By using sorted(), the inherent order is not changed.
+        bestMetrics = sorted(possibleMetrics)[0 : M]
+        for metricValue in bestMetrics:
+            # Find the index corresponding to the metric.
+            position = possibleMetrics.index(metricValue)
+            # Find and append the symbol corresponding to the index of the value.
+            x.append(symbolList[position])
         x.append(symbolList[best_metric_index])
         eList.append(em[best_metric_index])
-    # Return the Vector of the K symbols with the best metrics.
-    return np.reshape(x, (16,1))
+    
+    # Final detection: Find the best overall path.
+    finalList = []
+    for m in range(1, M + 1):
+        final = np.linalg.norm(D[:, m])
+        finalList.append(final)
+    # Find the minimal path out of M possible transmission scenarios.
+    min_path = fianlList.index(min(finalList))
+    # Return the Vector of the K * N_t symbols with the best overall metrics.
+    return np.reshape(D[:, min_path], (K * N_t,1))
 
 def bpsk(symbols_per_frame):
     bpsk_map = np.array([1, -1])
@@ -153,12 +172,13 @@ def main():
 
     # x: KN_t x 1 // x_k: N_t x 1
     # Signal Vector. No spatial information for now.
-    signalList = bpsk(K * N_t)
+    zeroPrefix = np.zeros(ZP_len, dtype=np.int)
+    signalList = np.concatenate((zeroPrefix, bpsk(K * N_t - ZP_len)))
     # Add a Zero-Prefix with length P-1
-    prefixedSignalList = addZeroPrefix(signalList.tolist(), ZP_len)
+    #prefixedSignalList = addZeroPrefix(signalList.tolist(), ZP_len)
     # Transpose 
     signalVector = np.transpose(np.array([signalList]))
-    prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
+    #prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
     #print(signalVector)
     
     # n: (K+P-1)N_r x 1
@@ -173,7 +193,7 @@ def main():
     # DETECT.
     estimatedVector = detector(rxVector, channelMatrix, N_r, N_t)
     #print(estimatedVector.flatten())
-    #print(np.asarray(estimatedVector))
+    print(np.asarray(estimatedVector))
 
     # Show if any errors have occured.
     #estimatedVector = np.asarray(estimatedVector)
@@ -181,7 +201,7 @@ def main():
     signalVector = signalVector.flatten()
     estimatedVector = estimatedVector.flatten()
     count = 0
-    for index in range(0, len(signalVector)):
+    for index in range(2, len(signalVector)):
         if signalVector[index] != estimatedVector[index]:
             count += 1
     
