@@ -42,24 +42,25 @@ def detector(rxVector, H, n_rows, n_columns):
         # List of selected metrics.
         possibleMetrics = []
         # Find the corresponding metrics.
-        for possibleSymbol in symbolList:
-            possibleSymbolVector = list(x)
-            possibleSymbolVector.append(possibleSymbol)
-            #xm = np.hstack(np.asarray(possibleSymbolVector))
-            xm = np.asarray(possibleSymbolVector)
-            xm = np.reshape(xm, (n_columns * (step + 1), 1))
-            #print(xm.size)
-            # As all H_x block-submatrices are n_rows x n_columns.
-            h = H[n_rows * step : n_rows * step + n_rows, : n_columns * step + n_columns]
-            #print(h)
-            #print(str(h.size) + "  " + str(h.shape))
-            #h = h.reshape(1, h.size)
-            # Compute the metrics for each candidate vector.
-            #print(np.transpose(xm))
-            #xm = np.transpose(xm)
-            metric = sum(eList) + np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))
-            #print(e_index)
-            possibleMetrics.append(metric)            
+        for m in range(0, M):
+            for possibleSymbol in symbolList:
+                possibleSymbolVector = list(x)
+                possibleSymbolVector.append(possibleSymbol)
+                #xm = np.hstack(np.asarray(possibleSymbolVector))
+                xm = np.asarray(possibleSymbolVector)
+                xm = np.reshape(xm, (n_columns * (step + 1), 1))
+                #print(xm.size)
+                # As all H_x block-submatrices are n_rows x n_columns.
+                h = H[n_rows * step : n_rows * step + n_rows, : n_columns * step + n_columns]
+                #print(h)
+                #print(str(h.size) + "  " + str(h.shape))
+                #h = h.reshape(1, h.size)
+                # Compute the metrics for each candidate vector.
+                #print(np.transpose(xm))
+                #xm = np.transpose(xm)
+                metric = sum(E[m]) + np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))
+                #print(e_index)
+                possibleMetrics[m].append(metric)            
         # Obtain corresponding M candidate vectors.
         # Keep the M elements with the smallest metrics. By using sorted(), the inherent order is not changed.
         bestMetrics = sorted(possibleMetrics)[0 : M]
@@ -68,7 +69,7 @@ def detector(rxVector, H, n_rows, n_columns):
             position = possibleMetrics.index(metricValue)
             # Find and append the symbol corresponding to the index of the value.
             x.append(symbolList[position])
-        x.append(symbolList[best_metric_index])
+            E[m].append(metricValue)
         eList.append(em[best_metric_index])
     
     # Final detection: Find the best overall path.
