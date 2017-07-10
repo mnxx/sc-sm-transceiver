@@ -14,15 +14,16 @@ Test the output of the proposed detector scheme, to see how reliable the system 
 """
 
 
+import sys
+import time
 import subprocess
 
 
 # Count the successful reconstructions of the sent signals.
 count = 0
+start = time.time()
 for i in range(1,100):
-    val = subprocess.check_output(["python3", "proposed_detector.py"])
-    #print(val)
-    if val == b'True\n':
-        count = count + 1
-
-print(str(count) + " of 100 tests were correct! \n > " + str(count) + "%")
+    errors = subprocess.check_output(["python3", "proposed_detector.py"])
+    count += int(errors)
+diff = time.time() - start
+print(str(count) + " bits in 100 tests were wrong! \n > BER = " + str(count / (8 * 100)) + "\n > In " + str(diff) + " seconds.")
