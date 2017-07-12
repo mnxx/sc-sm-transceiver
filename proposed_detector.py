@@ -29,13 +29,18 @@ def detector(rxVector, H, n_rows, n_columns):
     # M algorithm: breadth-first search with M survivors.
     M = 2
     # E: List of lists - list of the metrics of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
-    E = []
+    #E = []
     # D: List of lists - list of the symbols of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
     D = []
-    # Vector with lowest estimated metrics for each iteration.
+    # Vector with the accumulated M lowest estimated metrics for each iteration.
     e = []
     # Vector with the estimated symbols; grows with each iteration.
-    x = []
+    #x = []
+
+    # Build D and e.
+    for m in range(0, M):
+        D.append([])
+        e.append(0)
     
     # Repeat detection process K times
     for step, y in enumerate(rxVector[: 8]):
@@ -44,43 +49,49 @@ def detector(rxVector, H, n_rows, n_columns):
         # Find the corresponding metrics.
         for m in range(0, M):
             for possibleSymbol in symbolList:
-                possibleSymbolVector = list(x)
+                # Create a seperate list.
+                possibleSymbolVector = list(D[m])
+                # Add the possible symbol to the seperate list.
                 possibleSymbolVector.append(possibleSymbol)
-                #xm = np.hstack(np.asarray(possibleSymbolVector))
+                print(possibleSymbolVector)
+                # Make list accessible to numpy operations.
                 xm = np.asarray(possibleSymbolVector)
                 xm = np.reshape(xm, (n_columns * (step + 1), 1))
-                #print(xm.size)
-                # As all H_x block-submatrices are n_rows x n_columns.
+                # All H_x block-submatrices are n_rows x n_columns.
                 h = H[n_rows * step : n_rows * step + n_rows, : n_columns * step + n_columns]
                 #print(h)
                 #print(str(h.size) + "  " + str(h.shape))
                 #h = h.reshape(1, h.size)
                 # Compute the metrics for each candidate vector.
-                #print(np.transpose(xm))
-                #xm = np.transpose(xm)
-                metric = sum(E[m]) + np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))
+                # Each metric is a tuple of the value and m to keep the path information.
+                metric = (e[m] + np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm)), m, possibleSymbol)
                 #print(e_index)
-                possibleMetrics[m].append(metric)            
+                possibleMetrics.append(metric)            
         # Obtain corresponding M candidate vectors.
         # Keep the M elements with the smallest metrics. By using sorted(), the inherent order is not changed.
         bestMetrics = sorted(possibleMetrics)[0 : M]
-        for metricValue in bestMetrics:
-            # Find the index corresponding to the metric.
-            position = possibleMetrics.index(metricValue)
+        for m, metric in enumerate(bestMetrics):
+            # Find the m corresponding to the metric.
+            position = metric[1]
+            # Add the metric to the accumulated metrics.
+            e[m] = e[position] + metric[0]
             # Find and append the symbol corresponding to the index of the value.
-            x.append(symbolList[position])
-            E[m].append(metricValue)
-        eList.append(em[best_metric_index])
-    
+            # Check if the previous symbols have been the same, i.e. the m is similar to the m of the metric.
+            if D[m][:] == D[position][:]:
+            # Append the corresponding symbol to the list.
+                D[m].append(symbolList[metric[2]])
+            else:
+                # Drop the current symbol list in favor of the list to which the metric belongs.
+                D[m] = D[position][:]
+                # Append the corresponding symbol to the list.
+                D[m].append(symbolList[metric[2]])
+        print(D[0])
+                
     # Final detection: Find the best overall path.
-    finalList = []
-    for m in range(1, M + 1):
-        final = np.linalg.norm(D[:, m])
-        finalList.append(final)
-    # Find the minimal path out of M possible transmission scenarios.
-    min_path = fianlList.index(min(finalList))
+    # The minimal path is the first Vector of our M possible transmission scenarios.
+    min_path = D[0]
     # Return the Vector of the K * N_t symbols with the best overall metrics.
-    return np.reshape(D[:, min_path], (K * N_t,1))
+    return np.reshape(min_path, (K * N_t,1))
 
 def bpsk(symbols_per_frame):
     bpsk_map = np.array([1, -1])
