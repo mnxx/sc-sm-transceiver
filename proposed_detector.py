@@ -102,13 +102,11 @@ def detector(rxVector, H, n_rows, n_columns):
     # The minimal path is the first Vector of our M possible transmission scenarios.
     min_path = D[0]
     # Return the Vector of the K * N_t symbols with the best overall metrics.
-    return np.reshape(min_path, (8 * 2,1))
+    return min_path
 
 def bpsk(symbols_per_frame):
     bpsk_map = np.array([1, -1])
-    #symbol_indices_train = np.random.randint(0, bpsk_map.size, symbols_per_frame)
     symbol_indices_data = np.random.randint(0, bpsk_map.size, symbols_per_frame) 
-    #s_train = bpsk_map[symbol_indices_train]
     return bpsk_map[symbol_indices_data]
 
 def addZeroPrefix(symbol_list, prefix_len):
@@ -118,7 +116,7 @@ def addZeroPrefix(symbol_list, prefix_len):
     return symbol_list
 
 def noise(elements_per_frame, SNR):
-    return np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1))
+    return np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1))
 
 
 def main():
@@ -138,7 +136,7 @@ def main():
     ZP_len = P-1
 
     # Signal to Noise Ratio.
-    SNR = 1
+    SNR = 5
         # H_t: tN_r x tN_t
     # The submatrices of H. Elements are complex Gaussian distributed.
     #CN_mean = [0, 0]
@@ -217,7 +215,7 @@ def main():
     #print(rxVector.size)
 
     # DETECT.
-    estimatedVector = detector(rxVector, channelMatrix, N_r, N_t)
+    estimatedVector = np.reshape(detector(rxVector, channelMatrix, N_r, N_t), (K * N_t, 1))
     #print(estimatedVector.flatten())
     #print(np.asarray(estimatedVector))
 
