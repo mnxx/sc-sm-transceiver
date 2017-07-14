@@ -11,7 +11,6 @@
 
 ### Right Now
 
-- M > 1
-- zero prefix
-- efficiency analysis
-- sm symbol creation
+- clarify zero prefix usage
+- visual efficiency analysis (2x1, 2x2, 1x2)
+- generalize sm symbol creation
