@@ -18,12 +18,22 @@ import sys
 import time
 import subprocess
 
-
-# Count the successful reconstructions of the sent signals.
+symbols = 8
+symbol_size = 2
+rounds = 1000
 count = 0
+
+# Start measuring the time.
+# As check_output has to wait for the console, the process takes relatively long.
 start = time.time()
-for i in range(1,100):
+
+# Sum the erroneus bits for each iteration.
+for i in range(0, rounds):
     errors = subprocess.check_output(["python3", "proposed_detector.py"])
     count += int(errors)
+
+# Measure the passed time.
 diff = time.time() - start
-print(str(count) + " bits in 100 tests were wrong! \n > BER = " + str(count / (8 * 100)) + "\n > In " + str(diff) + " seconds.")
+
+# Print the results.
+print(str(count) + " bits in " + str(rounds) + " tests were wrong! \n > BER = " + str(count / (symbols * symbol_size * rounds) * 1000) + " * 10^-3."+ "\n > In " + str(diff) + " seconds.")
