@@ -29,7 +29,7 @@ start = time.time()
 
 # Sum the erroneus bits for each iteration.
 for i in range(0, rounds):
-    errors = subprocess.check_output(["python3", "proposed_detector.py"])
+    errors = subprocess.check_output(["python3", "proposed_detector.py", "10"])
     count += int(errors)
 
 # Measure the passed time.
