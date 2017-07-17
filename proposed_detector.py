@@ -29,7 +29,7 @@ def detector(rxVector, H, n_rows, n_columns):
     symbolList = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
     
     # M algorithm: breadth-first search with M survivors.
-    M = 2
+    M = 4
     # E: List of lists - list of the metrics of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
     #E = []
     # D: List of lists - list of the symbols of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
@@ -116,15 +116,19 @@ def addZeroPrefix(symbol_list, prefix_len):
     return symbol_list
 
 def noise(elements_per_frame, SNR):
-    return np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1))
+    #return np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1))
+    return np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1))
 
 
 def main():
+    # Read input arguments.
+    input1 = sys.argv[1]
+    
     # Number of transmit antennas.
     N_t = 2
 
     # Number of reception antennas.
-    N_r = 2
+    N_r = 1
     
     # Frame length of our transmission - K symbols for each transmission.
     K = 8
@@ -136,7 +140,7 @@ def main():
     ZP_len = P-1
 
     # Signal to Noise Ratio.
-    SNR = 5
+    SNR = int(input1)
         # H_t: tN_r x tN_t
     # The submatrices of H. Elements are complex Gaussian distributed.
     #CN_mean = [0, 0]
