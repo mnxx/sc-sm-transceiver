@@ -23,7 +23,7 @@ import numpy as np
 #import scipy.linalg as lin
 
 
-def detector(rxVector, H, n_rows, n_columns):
+def detector(rxVector, H, n_rows, n_columns, K):
     # Possible symbols: FOR NOW, LIMITED ANTENNA INDEX INFORMATION FOR 2x2.
     #symbolList = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]])
     symbolList = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
@@ -45,7 +45,7 @@ def detector(rxVector, H, n_rows, n_columns):
         e.append(0)
     
     # Repeat detection process K times
-    for step, y in enumerate(rxVector[: 8]):
+    for step in range (0, K):
         # List of selected metrics.
         possibleMetrics = []
         # Find the corresponding metrics.
@@ -131,7 +131,7 @@ def main():
     N_r = 1
     
     # Frame length of our transmission - K symbols for each transmission.
-    K = 8
+    K = 4
 
     # Number of multipath links.
     P = 3
@@ -219,7 +219,7 @@ def main():
     #print(rxVector.size)
 
     # DETECT.
-    estimatedVector = np.reshape(detector(rxVector, channelMatrix, N_r, N_t), (K * N_t, 1))
+    estimatedVector = np.reshape(detector(rxVector, channelMatrix, N_r, N_t, K), (K * N_t, 1))
     #print(estimatedVector.flatten())
     #print(np.asarray(estimatedVector))
 

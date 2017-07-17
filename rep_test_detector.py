@@ -18,7 +18,7 @@ import sys
 import time
 import subprocess
 
-symbols = 8
+symbols = 4
 symbol_size = 2
 rounds = 1000
 count = 0
