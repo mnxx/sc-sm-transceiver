@@ -206,7 +206,7 @@ def main():
     # Transpose 
     signalVector = np.transpose(np.array([signalList]))
     #prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
-    #print(signalVector)
+    #print(np.transpose(signalVector))
     
     # n: (K+P-1)N_r x 1
     # Noise Vector. Elements are complex Gaussian distributed.

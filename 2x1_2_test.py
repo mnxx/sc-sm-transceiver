@@ -23,13 +23,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-symbols = 8
+symbols = 4
 symbol_size = 2
 rounds = 1000
 
 
 # BER is measured for the following SNRs.
-steps = np.arange(0, 20, 2)
+steps = np.arange(0, 22, 2)
 
 # The resulting BER values are stored in a list.
 points = []
@@ -60,6 +60,6 @@ print(points)
     
 # Plot the results in a BER over SNR plot.
 plt.plot(steps, points, 'bo', steps, points, 'k')
-plt.axis([0,20,0.0001, 1])
+plt.axis([0,20,0.00001, 1])
 plt.yscale('log')
 plt.show()
