@@ -47,7 +47,7 @@ def createSpatialSymbols(symbolList, N_t):
     mergedList = []
     for symbol in symbolList:
         for spatial in spatialList:
-            mergedList.append(symbol + spatial)           
+            mergedList.append(symbol + spatial)
     return mergedList
 """
 
@@ -83,7 +83,7 @@ def detector(symbolList, rxVector, H, n_rows, n_columns, K):
     for m in range(0, M):
         D.append([])
         e.append(0)
-    
+
     # Repeat detection process K times
     for step in range (0, K):
         # List of selected metrics.
@@ -145,7 +145,7 @@ def detector(symbolList, rxVector, H, n_rows, n_columns, K):
                 # Append the corresponding symbol to the list.
                 D[m].append(metric[2])
             print(str(D[m]) + " ### " + str(e[m]))
-                
+
     # Final detection: Find the best overall path.
     # The minimal path is the first Vector of our M possible transmission scenarios.
     min_path = D[0]
@@ -154,7 +154,7 @@ def detector(symbolList, rxVector, H, n_rows, n_columns, K):
 
 def bpsk(symbols_per_frame):
     bpsk_map = np.array([1, -1])
-    symbol_indices_data = np.random.randint(0, bpsk_map.size, symbols_per_frame) 
+    symbol_indices_data = np.random.randint(0, bpsk_map.size, symbols_per_frame)
     return bpsk_map[symbol_indices_data]
 
 def addZeroPrefix(symbol_list, prefix_len):
@@ -171,19 +171,19 @@ def noise(elements_per_frame, SNR):
 def main():
     # Read input arguments.
     input1 = sys.argv[1]
-    
+
     # Number of transmit antennas.
     N_t = 2
 
     # Number of reception antennas.
     N_r = 1
-    
+
     # Frame length of our transmission - K symbols for each transmission.
     K = 4
 
     # Number of multipath links.
     P = 3
-    
+
     # Length of the Zero-Prefix.
     ZP_len = P-1
 
@@ -203,7 +203,8 @@ def main():
     #print(H_1)
     #H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
 
-    
+
+
     # H: (K+P-1)N_r x KN_t
     # General Channel Matrix containing the submatrices of the channel.
     #rowList = [H_0, H_1, H_2, OM, OM, OM, OM, OM, OM, OM]
@@ -254,17 +255,17 @@ def main():
     #print(signalList)
     # Add a Zero-Prefix with length P-1
     #prefixedSignalList = addZeroPrefix(signalList.tolist(), ZP_len)
-    # Transpose 
+    # Transpose.
     signalVector = np.reshape(signalList, (K * N_t, 1))
     #prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
     print(np.transpose(signalVector))
-    
+
     # n: (K+P-1)N_r x 1
     # Noise Vector. Elements are complex Gaussian distributed.
     #noiseVector = np.sqrt(10**(-SNR / 10)) / 2 * noise((K + P - 1) * N_r, SNR)
     noiseVector = noise((K + P - 1) * N_r, SNR)
     #print(noiseVector)
-    
+
     # Y: (K+P-1)N_r x 1
     rxVector = channelMatrix.dot(signalVector) + noiseVector
     #print(rxVector)
@@ -283,9 +284,10 @@ def main():
     for index in range(2, len(signalVector)):
         if signalVector[index] != estimatedVector[index]:
             count += 1
-    
+            print("++ " + str(signalVector[index]))
+            print("__ " +  str(estimatedVector[index]))
     print(count)
-    
+
 
 if __name__ == '__main__':
     main()
