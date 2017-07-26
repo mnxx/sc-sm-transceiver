@@ -8,8 +8,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" 
-Implementation of ""A Low-Complexity Detection Scheme for Generalized Spatial Modulation Aided Single Carrier Systems" in context of SC SM-MIMO LSA system.
+"""
+Implementation of "A Low-Complexity Detection Scheme for Generalized Spatial Modulation Aided
+Single Carrier Systems" in context of SC SM-MIMO LSA system.
 
 Therefore following assumptions have been made:
  - Small scale fading
@@ -19,122 +20,95 @@ Therefore following assumptions have been made:
 
 
 import sys
-import numpy as np
 import random
 from operator import itemgetter
-#import scipy.linalg as lin
-
-"""
-def createSpatialSymbols(symbolList, N_t):
-    # Calculate the number of additional bits. Only one transmit antenna used for each symbol transmission.
-    # The int() function automatically floors the result.
-    nb_bits = int(np.log2(N_t))
-    nb_options = 2**nb_bits
-    # Create a list, assigning bits to symbols.
-    spatialList = []
-    # Create spatial modulation symbols.
-    for i in range (0, nb_options):
-        # Format the decimal number to bits represented by a string.
-        symbolString = "{0:b}".format(i)
-        # Cast the string to an integer and split it in a list.
-        spatialSymbol = list(map(int, symbolString))
-        # Append the list as a symbol.
-        spatialList.append(spatialSymbol)
-        # Pad zeros in front of the symbols which are too short.
-        while len(spatialList[i]) != nb_bits:
-            spatialList[i] = [0] + spatialList[i]
-    # Merge the symbol list and the spatial modulation bit list into one.
-    mergedList = []
-    for symbol in symbolList:
-        for spatial in spatialList:
-            mergedList.append(symbol + spatial)
-    return mergedList
-"""
-
-def createPossibleSymbols(modSymbols, N_t):
-    indexList = list(range(1, N_t + 1))
-    possibleSymbols =[]
-    for mod_symbol in modSymbols:
-        for antenna_index in indexList:
-            possibleSymbols.append([0] * (antenna_index - 1) + mod_symbol + [0] * (N_t - antenna_index))
-    return possibleSymbols
+import numpy as np
 
 
-def createTransmitFrame(possibleSymbols, K):
-    signalVector = []
-    for k in range(0, K):
-        signalVector.append(random.choice(possibleSymbols))
-    return signalVector
+def create_possible_symbols(modulation_symbols, n_t):
+    """ Return the spatially modulated symbols from the modulated symbols. """
+    index_list = list(range(1, n_t + 1))
+    possible_symbols = []
+    for mod_symbol in modulation_symbols:
+        for antenna_index in index_list:
+            possible_symbols.append([0] * (antenna_index - 1)
+                                    + mod_symbol
+                                    + [0] * (n_t - antenna_index))
+    return possible_symbols
 
 
-def detector(symbolList, rxVector, H, n_rows, n_columns, K):
-    # M algorithm: breadth-first search with M survivors.
-    M = 4
-    # E: List of lists - list of the metrics of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
-    #E = []
-    # D: List of lists - list of the symbols of the M survivor paths. Sublists grow with each iteration (N_t to K * N_t).
+def create_transmission_frame(possible_symbols, k):
+    """ Return a transmission frame using k random symbols from a list of all possible symbols. """
+    signal_vector = []
+    for _ in range(0, k):
+        signal_vector.append(random.choice(possible_symbols))
+    return signal_vector
+
+
+def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
+    """ Detect the received symbols using the M-based LSS detection scheme. """
+    # D: List of lists - list of the symbols of the M survivor paths.
+    # Sub-lists contain estimated symbols, grow with each iteration (N_t to K * N_t).
     D = []
     # Vector with the accumulated M lowest estimated metrics for each iteration.
     e = []
-    # Vector with the estimated symbols; grows with each iteration.
-    #x = []
 
     # Build D and e.
-    for m in range(0, M):
+    for _ in range(0, M):
         D.append([])
         e.append(0)
 
     # Repeat detection process K times
-    for step in range (0, K):
+    for step in range(0, k):
         # List of selected metrics.
-        possibleMetrics = []
+        possible_metrics = []
         # Find the corresponding metrics.
         for m in range(0, M):
-            # Create seperate list with the current symbols.
-            possibleSymbolVector = list(D[m])
+            # Create separate list with the current symbols.
+            possible_symbol_vector = list(D[m])
             #print(D[m])
-            for possibleSymbol in symbolList:
+            for possible_symbol in symbol_list:
                 # Add the possible symbol to the seperate list.
-                possibleSymbolVector.append(possibleSymbol)
-                #print(str(possibleSymbolVector) + "## " + str(step))
-                # Make list accessible to numpy operations.
-                xm = np.asarray(possibleSymbolVector)
-                xm = np.reshape(xm, (n_columns * (step + 1), 1))
+                possible_symbol_vector.append(possible_symbol)
+                #print(str(possible_symbol_vector) + "## " + str(step))
+                # Make list accessible to Numpy operations.
+                #xm = np.asarray(possible_symbol_vector)
+                x_m = np.reshape(possible_symbol_vector, (n_columns * (step + 1), 1))
                 # All H_x block-submatrices are n_rows x n_columns.
-                h = H[n_rows * step : n_rows * step + n_rows, : n_columns * step + n_columns]
+                h = channel_matrix[n_rows * step : n_rows * step + n_rows,
+                                   : n_columns * step + n_columns]
                 #print(h)
                 #print(str(h.size) + "  " + str(h.shape))
                 #h = h.reshape(1, h.size)
                 # Compute the metrics for each candidate vector.
                 # Each metric is a tuple of the value and m to keep the path information.
-                metric = (e[m] + np.square(np.linalg.norm(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))), m, possibleSymbolVector.pop())
-                #print(str(np.sum(abs(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))**2)) + "~~~")
-                #metric = (e[m] + np.sum(abs(rxVector[n_rows * step : n_rows * step + n_rows] - h.dot(xm))**2), m, possibleSymbolVector.pop())
+                metric = (e[m] + (np.linalg.norm(rx_vector[n_rows * step : n_rows * step + n_rows]
+                                                 - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
                 # Avoid adding the same metric multiple times.
                 # As the metric tuple includes m, different paths can have the same metric value.
                 if step == 0:
-                    if metric[0] not in [usedMetric[0] for usedMetric in possibleMetrics]:
-                        possibleMetrics.append(metric)
-                elif metric not in possibleMetrics:
-                    possibleMetrics.append(metric)
-        # Obtain corresponding M candidate vectors.
-        # Keep the M elements with the smallest metrics. By using sorted(), the inherent order is not changed.
-        #print(possibleMetrics)
-        bestMetrics = sorted(possibleMetrics, key = itemgetter(0))[0 : M]
-        print(str(bestMetrics) + "#####")
-        # As e is about to be updated, a copied list is needed to avoid the accumulation of metric values.
+                    if metric[0] not in [usedMetric[0] for usedMetric in possible_metrics]:
+                        possible_metrics.append(metric)
+                elif metric not in possible_metrics:
+                    possible_metrics.append(metric)
+        # Obtain corresponding M candidate vectors: Keep the M elements with the smallest metrics.
+        # Using sorted(), the inherent order is not changed.
+        #print(possible_metrics)
+        best_metrics = sorted(possible_metrics, key=itemgetter(0))[0 : M]
+        #print("////" + str(best_metrics))
+        # As e is updated, a copied list is needed to avoid the accumulation of metric values.
         #previous_e = list(e)
-        # Same is true for D.
+        # As D is updated, a copied list is needed to avoid the misinterpretation of paths.
         previous_D = list(D)
-        for m, metric in enumerate(bestMetrics):
+        for m, metric in enumerate(best_metrics):
             # Find the m corresponding to the metric.
             position = metric[1]
             # Add the metric to the accumulated metrics.
-            # !!! ERROR !!!
             #e[m] = previous_e[position] + metric[0]
             e[m] = metric[0]
             # Find and append the symbol corresponding to the index of the value.
-            # Check if the previous symbols have been the same, i.e. the m is similar to the m of the metric.
+            # Check if the previous symbols have been the same,
+            # i.e. the m is similar to the m of the metric.
             if D[m][:] == previous_D[position][:]:
             # Append the corresponding symbol to the list.
                 D[m].append(metric[2])
@@ -144,33 +118,34 @@ def detector(symbolList, rxVector, H, n_rows, n_columns, K):
                 D[m] = previous_D[position][: step]
                 # Append the corresponding symbol to the list.
                 D[m].append(metric[2])
-            print(str(D[m]) + " ### " + str(e[m]))
+            #print(str(D[m]) + " ### " + str(e[m]))
 
-    # Final detection: Find the best overall path.
     # The minimal path is the first Vector of our M possible transmission scenarios.
-    min_path = D[0]
     # Return the Vector of the K * N_t symbols with the best overall metrics.
-    return min_path
+    return D[0]
 
-def bpsk(symbols_per_frame):
-    bpsk_map = np.array([1, -1])
-    symbol_indices_data = np.random.randint(0, bpsk_map.size, symbols_per_frame)
-    return bpsk_map[symbol_indices_data]
+def bpsk():
+    """ Create BPSK Symbols. """
+    return [[1], [-1]]
 
-def addZeroPrefix(symbol_list, prefix_len):
+def add_zero_prefix(symbol_list, prefix_len):
+    """ Add a Zero-Prefix to a frame, i.e. a list of symbols. """
     while prefix_len:
         symbol_list.insert(0, 0)
         prefix_len = prefix_len - 1
     return symbol_list
 
 def noise(elements_per_frame, SNR):
-    #return np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10)), (elements_per_frame, 1))
-    return np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1)) + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1))
+    """ Create a random complex noise vector, CN(0, sigma**2) distributed. """
+    return (np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1))
+            + 1j * np.random.normal(0, np.sqrt(10**(-SNR / 10) / 2), (elements_per_frame, 1)))
 
 
 def main():
+    """ Main function. """
     # Read input arguments.
     input1 = sys.argv[1]
+    input2 = sys.argv[2]
 
     # Number of transmit antennas.
     N_t = 2
@@ -189,103 +164,73 @@ def main():
 
     # Signal to Noise Ratio.
     SNR = int(input1)
-        # H_t: tN_r x tN_t
-    # The submatrices of H. Elements are complex Gaussian distributed.
-    #CN_mean = [0, 0]
-    #CN_cov = [[1, 0], [0, 1]]
 
-    #OM = np.array([[0 + 0j], [0 + 0j]])
-    #print(OM)
-    #x = np.random.multivariate_normal(CN_mean, CN_cov, 1)
-    #H_0 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
-    #print(H_0.size)
-    #H_1 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
-    #print(H_1)
-    #H_2 = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
-
-
-
-    # H: (K+P-1)N_r x KN_t
-    # General Channel Matrix containing the submatrices of the channel.
-    #rowList = [H_0, H_1, H_2, OM, OM, OM, OM, OM, OM, OM]
-    #columnList = [OM, OM, OM, OM]
-    #channelMatrix = lin.toeplitz([1,2,3,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0])
-    #channelMatrix = lin.toeplitz(rowList, columnList)
-    #print(channelMatrix[0])
-    #print(channelMatrix[1])
-    #print(channelMatrix[2])
+    # M algorithm: breadth-first search with M survivors.
+    M = int(input2)
 
     # If there is no multipath-propagation:
     if P < 2:
-        # Do something.
         print("No multipath-propagation.")
-        
+
     # H: (K+P-1)N_r x KN_t
-    # General Channel Matrix containing the submatrices of the channel.
-    subMatrices = dict()
+    # General Channel Matrix containing the sub-matrices of the channel.
+    sub_matrices = dict()
+    # Each sub-matrix has a dimension of N_r x N_t.
     for index in range(0, P):
-        #subMatrices[index] = np.sqrt(10**(-SNR/10) / 2) * (np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t))
-        subMatrices[index] = np.random.randn(N_r, N_t) + 1j * np.random.randn(N_r, N_t)
-    #print(subMatrices[0])
-    #inputs = (H_0, H_1, H_2)
-    # Number of columns is KN_t = input channel matrices + C.
-    number_columns = K
-    #print(number_columns)
-    # Number of rows is (K+P-1)N_r.
-    number_rows = (K + P - 1)
-    #print(number_rows)
-    # All submatrices should have the same dimensions.
-    nb_sub_rows, nb_sub_columns = subMatrices[0].shape
-    # Create 4-dimensional matrix using the submatrices.
-    channelMatrix = np.zeros((number_rows, nb_sub_rows, number_columns, nb_sub_columns), dtype = subMatrices[0].dtype)
-    for index, subMatrix in subMatrices.items():
-        for element in range(number_columns):
-            channelMatrix[index + element, : , element, :] = subMatrix
+        sub_matrices[index] = np.random.randn(N_r, N_t) / 2 + 1j * np.random.randn(N_r, N_t) / 2
+    # Number of columns of sub-matrices is K.
+    nb_columns = K
+    # Number of rows of sub-matrices is (K+P-1).
+    nb_rows = (K + P - 1)
+    # Create 4-dimensional matrix using the sub-matrices.
+    channel_matrix = np.zeros((nb_rows, N_r, nb_columns, N_t), dtype=sub_matrices[0].dtype)
+    for index, sub_matrix in sub_matrices.items():
+        for element in range(nb_columns):
+            channel_matrix[index + element, :, element, :] = sub_matrix
     # Flatten the 4-dimensional matrix.
-    channelMatrix.shape = (number_rows * nb_sub_rows, number_columns * nb_sub_columns)
+    channel_matrix.shape = (nb_rows * N_r, nb_columns * N_t)
     #print(channelMatrix.shape)
 
     # x: KN_t x 1 // x_k: N_t x 1
-    # Signal Vector. No spatial information for now.
-    #zeroPrefix = np.zeros(ZP_len, dtype=np.int)
-    #signalList = np.concatenate((zeroPrefix, bpsk(K * N_t - ZP_len)))n
-    bpskList = [[1], [-1]]
-    possibleSymbols = createPossibleSymbols(bpskList, N_t)
-    signalList = createTransmitFrame(possibleSymbols, K)
-    #print(signalList)
+    # Signal Vector. Signals consists of spatial modulation symbols.
+    possible_symbols = create_possible_symbols(bpsk(), N_t)
+    signal_list = create_transmission_frame(possible_symbols, K)
+    #print(signal_list)
     # Add a Zero-Prefix with length P-1
-    #prefixedSignalList = addZeroPrefix(signalList.tolist(), ZP_len)
-    # Transpose.
-    signalVector = np.reshape(signalList, (K * N_t, 1))
-    #prefixedSignalVector = np.transpose(np.array([prefixedSignalList]))
-    print(np.transpose(signalVector))
+    #prefixed_signal_list = add_zero_prefix(signal_list.tolist(), ZP_len)
+    # Create the corresponding signal vector with the expected shape and type.
+    signal_vector = np.reshape(signal_list, (K * N_t, 1))
+    #print(np.transpose(signal_vector))
 
     # n: (K+P-1)N_r x 1
     # Noise Vector. Elements are complex Gaussian distributed.
-    #noiseVector = np.sqrt(10**(-SNR / 10)) / 2 * noise((K + P - 1) * N_r, SNR)
-    noiseVector = noise((K + P - 1) * N_r, SNR)
-    #print(noiseVector)
+    noise_vector = noise((K + P - 1) * N_r, SNR)
+    #print(noise_vector)
 
     # Y: (K+P-1)N_r x 1
-    rxVector = channelMatrix.dot(signalVector) + noiseVector
-    #print(rxVector)
+    # Reception Vector. Signal attenuated by frequency selective fading channel.
+    rx_vector = channel_matrix.dot(signal_vector) + noise_vector
+    #print(rx_vector)
 
     # DETECT.
-    estimatedVector = np.reshape(detector(possibleSymbols, rxVector, channelMatrix, N_r, N_t, K), (K * N_t, 1))
-    #print(estimatedVector.flatten())
-    #print(np.transpose(estimatedVector))
+    estimated_vector = np.reshape(detector(possible_symbols,
+                                           rx_vector,
+                                           channel_matrix,
+                                           N_r,
+                                           N_t,
+                                           K,
+                                           M),
+                                  (K * N_t, 1))
 
-    # Show if any errors have occured.
-    #estimatedVector = np.asarray(estimatedVector)
-    #print(np.array_equal(signalVector, estimatedVector))
-    signalVector = signalVector.flatten()
-    estimatedVector = estimatedVector.flatten()
+    # Show if any errors have occurred.
+    signal_vector = signal_vector.flatten()
+    estimated_vector = estimated_vector.flatten()
     count = 0
-    for index in range(2, len(signalVector)):
-        if signalVector[index] != estimatedVector[index]:
+    for index in range(0, len(signal_vector)):
+        if signal_vector[index] != estimated_vector[index]:
             count += 1
-            print("++ " + str(signalVector[index]))
-            print("__ " +  str(estimatedVector[index]))
+            #print("++ " + str(signal_vector[index]))
+            #print("__ " +  str(estimated_vector[index]))
     print(count)
 
 
