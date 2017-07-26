@@ -8,13 +8,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" 
-Test the output of the proposed detector scheme, to see how reliable the system is. 
+"""
+Test the output of the proposed detector scheme, to see how reliable the system is.
 
 """
 
-
-import sys
 import time
 import subprocess
 
@@ -29,11 +27,13 @@ start = time.time()
 
 # Sum the erroneus bits for each iteration.
 for i in range(0, rounds):
-    errors = subprocess.check_output(["python3", "proposed_detector.py", "20"])
+    errors = subprocess.check_output(["python3", "proposed_detector.py", "20", "2"])
     count += int(errors)
 
 # Measure the passed time.
 diff = time.time() - start
 
 # Print the results.
-print(str(count) + " bits in " + str(rounds) + " tests were wrong! \n > BER = " + str(count / (symbols * symbol_size * rounds) * 1000) + " * 10^-3."+ "\n > In " + str(diff) + " seconds.")
+print(str(count) + " bits in " + str(rounds) + " tests were wrong! \n > BER = "
+      + str(count / (symbols * symbol_size * rounds) * 1000) + " * 10^-3."+ "\n > In "
+      + str(diff) + " seconds.")
