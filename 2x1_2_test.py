@@ -16,7 +16,6 @@ This test also requires: - The number of symbols per frame.
 """
 
 
-import sys
 import time
 import subprocess
 import numpy as np
@@ -42,24 +41,25 @@ for step in steps:
     # Sum the erroneus bits for each iteration.
     count = 0
     for i in range(0, rounds):
-        errors = subprocess.check_output(["python3", "proposed_detector.py", str(step)])
+        errors = subprocess.check_output(["python3", "proposed_detector.py", str(step), "4"])
         count += int(errors)
 
     # Measure the passed time.
     diff = time.time() - start
 
     ber = count / (symbols * symbol_size * rounds)
-    
+
     # Print the results.
-    print("\n" + str(count) + " bits in " + str(rounds) + " tests were wrong! \n > BER = " + str(ber * 1000) + " * 10^-3."+ "\n > In " + str(diff) + " seconds.\n")
+    print("\n" + str(count) + " bits in " + str(rounds) + " tests were wrong!")
+    print(" > BER = " + str(ber * 1000) + " * 10^-3."+ "\n > In " + str(diff) + " seconds.\n")
 
     # Append result to the list.
     points.append(ber)
 
 print(points)
-    
+
 # Plot the results in a BER over SNR plot.
 plt.plot(steps, points, 'bo', steps, points, 'k')
-plt.axis([0,20,0.00001, 1])
+plt.axis([0, 20, 0.00001, 1])
 plt.yscale('log')
 plt.show()

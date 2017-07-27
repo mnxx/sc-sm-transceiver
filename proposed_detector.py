@@ -83,7 +83,9 @@ def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
                 # Compute the metrics for each candidate vector.
                 # Each metric is a tuple of the value and m to keep the path information.
                 metric = (e[m] + (np.linalg.norm(rx_vector[n_rows * step : n_rows * step + n_rows]
-                                                 - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
+                                                - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
+                #print(str(e[m]) + " + f_norm: " + str(rx_vector[n_rows * step : n_rows * step + n_rows]) + " - " + str(h.dot(x_m)))
+                #print(metric)
                 # Avoid adding the same metric multiple times.
                 # As the metric tuple includes m, different paths can have the same metric value.
                 if step == 0:
@@ -94,13 +96,14 @@ def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
         # Obtain corresponding M candidate vectors: Keep the M elements with the smallest metrics.
         # Using sorted(), the inherent order is not changed.
         #print(possible_metrics)
-        best_metrics = sorted(possible_metrics, key=itemgetter(0))[0 : M]
+        #best_metrics = sorted(possible_metrics, key=itemgetter(0))[0 : M]
+        possible_metrics.sort()
         #print("////" + str(best_metrics))
         # As e is updated, a copied list is needed to avoid the accumulation of metric values.
         #previous_e = list(e)
         # As D is updated, a copied list is needed to avoid the misinterpretation of paths.
         previous_D = list(D)
-        for m, metric in enumerate(best_metrics):
+        for m, metric in enumerate(possible_metrics[0 : M]):
             # Find the m corresponding to the metric.
             position = metric[1]
             # Add the metric to the accumulated metrics.
@@ -122,7 +125,16 @@ def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
 
     # The minimal path is the first Vector of our M possible transmission scenarios.
     # Return the Vector of the K * N_t symbols with the best overall metrics.
-    return D[0]
+    path_list = []
+    for index, estimated_symbols in enumerate(D):
+        symbols = np.reshape(estimated_symbols, (n_columns * k, 1))
+        path = ((np.linalg.norm(rx_vector - channel_matrix.dot(symbols))**2), index)
+        path_list.append(path)
+    path_list.sort()
+    #print(path_list)
+    best_m = path_list[0][1]
+    #print("==== " + str(D[best_m]))
+    return D[best_m]
 
 def bpsk():
     """ Create BPSK Symbols. """
