@@ -123,8 +123,8 @@ def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
                 D[m].append(metric[2])
             #print(str(D[m]) + " ### " + str(e[m]))
 
-    # The minimal path is the first Vector of our M possible transmission scenarios.
-    # Return the Vector of the K * N_t symbols with the best overall metrics.
+    # Final detection: Find the frame with the overall minimum metric of the M estimated frames.
+    # This time the metric is calculated by a  complete maximum likelihood detection.
     path_list = []
     for index, estimated_symbols in enumerate(D):
         symbols = np.reshape(estimated_symbols, (n_columns * k, 1))
@@ -134,6 +134,7 @@ def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
     #print(path_list)
     best_m = path_list[0][1]
     #print("==== " + str(D[best_m]))
+    # Return the Vector of the K * N_t symbols with the best overall metrics.
     return D[best_m]
 
 def bpsk():
