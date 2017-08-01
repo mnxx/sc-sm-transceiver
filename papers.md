@@ -2,6 +2,14 @@
 
 ## MAIN PAPERS
 
+### Single-Carrier SM-MIMO: A Promising Design for Broadband Large-Scale Antenna Systems
+    - main limitations of employing LSA for f-s channels: complexity, power consumption, high cost RF chains
+    - LS-MIMO: tens to hundreds of tas/ras -> RF chains + complex signal generation & detection
+    - SM design paradigm: low-complexity & energy-efficient
+    - problems w/ OFDM: jeopardizes single RF-benefits of SM-MIMO, PAPR, computational burden (DFT for each ta)
+    - f-s channel may be converted into a flat fading channel by using carefully designed receive filters
+    - 
+
 ### A Low-Complexity Detection Scheme for Generalized Spatial Modulation Aided Single Carrier Systems
     - GSM combines SM and V-BLAST
     - compared to PIC-R-SIC, scheme offers near ML detection performance while avoiding complicated matrix operations
