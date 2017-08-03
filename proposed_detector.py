@@ -83,8 +83,7 @@ def detector(symbol_list, rx_vector, channel_matrix, n_rows, n_columns, k, M):
                 # Compute the metrics for each candidate vector.
                 # Each metric is a tuple of the value and m to keep the path information.
                 metric = (e[m] + (np.linalg.norm(rx_vector[n_rows * step : n_rows * step + n_rows]
-                                                - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
-                #print(str(e[m]) + " + f_norm: " + str(rx_vector[n_rows * step : n_rows * step + n_rows]) + " - " + str(h.dot(x_m)))
+                                                 - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
                 #print(metric)
                 # Avoid adding the same metric multiple times.
                 # As the metric tuple includes m, different paths can have the same metric value.

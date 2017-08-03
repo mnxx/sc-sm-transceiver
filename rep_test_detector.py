@@ -18,7 +18,7 @@ import subprocess
 
 symbols = 4
 symbol_size = 2
-rounds = 1000
+rounds = 10000
 count = 0
 
 # Start measuring the time.
@@ -27,7 +27,7 @@ start = time.time()
 
 # Sum the erroneus bits for each iteration.
 for i in range(0, rounds):
-    errors = subprocess.check_output(["python3", "proposed_detector.py", "20", "2"])
+    errors = subprocess.check_output(["python3", "proposed_detector.py", "20", "4"])
     count += int(errors)
 
 # Measure the passed time.
