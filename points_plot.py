@@ -18,14 +18,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-#points = [0.30975, 0.2535, 0.1565, 0.101125, 0.0395, 0.02, 0.007, 0.001, 0.00055, 0.0002125,  0.000075]
-points = [0.110375, 0.069875, 0.04125, 0.022375, 0.015625, 0.008125, 0.00425, 0.003625, 0.000625, 0.000375, 0.0]
+points2 = [0.396, 0.32075, 0.24975, 0.168375, 0.115225, 0.066375, 0.036375,  0.0156, 0.00715, 0.0029, 0.00115]
+points4 = [0.30975, 0.2535, 0.1565, 0.101125, 0.0395, 0.02, 0.007, 0.0023875, 0.00055, 0.0002125,  0.000075]
 
 # BER is measured for the following SNRs.
 steps = np.arange(0, 22, 2)
 
 # Plot the results in a BER over SNR plot.
-plt.plot(steps, points, 'bo', steps, points, 'k')
+plt.title('Performance Analysis - BER/SNR')
+plt.plot(steps, points2, 'r-<', label='LSS, M=2')
+plt.plot(steps, points4, 'b-o', label='LSS, M=4')
 plt.axis([0, 20, 0.00001, 1])
+plt.xlabel('SNR')
+plt.ylabel('BER')
 plt.yscale('log')
+plt.legend()
 plt.show()

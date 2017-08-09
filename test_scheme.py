@@ -1,3 +1,8 @@
+# Copyright 2017 Communications Engineering Lab - KIT.
+# All Rights Reserved.
+# Author: Manuel Roth.
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the
 # GNU General Public License v3.0 is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.

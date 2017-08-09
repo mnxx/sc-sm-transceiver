@@ -68,3 +68,7 @@
       - drawbacks: higher average complexity, complicated metric sorting process
       - complexity of ML detection with high-order modulation increases more significantly than M-ML
       - channel correlation has great negative influence on BER performance, tas difficult to distinguish
+      
+## BACKGROUND INFORMATION
+
+### gpp.org/technologies/keywords-acronyms/98-lte
