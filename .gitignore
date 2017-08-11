@@ -38,3 +38,7 @@ coverage.xml
 *~
 \#*\#
 .\#*
+
+# Additional Python extensions
+*.py.swp
+*.py.save
