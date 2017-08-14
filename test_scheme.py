@@ -21,7 +21,7 @@ def main():
     """ Main function. """
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    setup = (2, 1)
+    setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
     k = 4
     # Number of multipath links.
@@ -33,7 +33,7 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 4
+    m = 2
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -48,9 +48,10 @@ def main():
     detector = det(setup, m)
 
     # LOOP FOR TESTING PURPOSES.
-    rounds = 100000
+    rounds = 1000000
     # BER is measured for the following SNRs.
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    steps = [18]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
