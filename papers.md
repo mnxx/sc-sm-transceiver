@@ -35,6 +35,22 @@
       - SC-SM schemes require only a single RF chain at the transmitter
       - further investigation required to strike an attractive tradeoff:
       - amongst detection complexity, attainable BER, tx efficiency, power efficiency
+      - SC-SM is special case of SC-GSM w/ N_g = 1, strikes trade-off among transmit rate, RF cost as well as detection complexity
+      - STdM exploits resolvable multipath components of f-s channel as novel means of conveying additional source information
+      - STdM found to be more energy-efficient than SC-SM
+      - STdM design critically hinges on idealized assumption that independent symbol-spaced taps are available for MIMO channels
+      - SFSK exploits specific indices of pre-designed space-time dispersion matrices for conveying extra implicit information
+      - SFSK requires multiple RF chains and advantages of single-RF are eroded
+      - traditional receivers not directly suitable:
+      - conventional SM detectors focused on flat-fading scenarios, i.e. no ISI
+      - existing MIMO detectors assume N_r > N_t (channel matrix has column full-rank)
+      - FDE: low-complexity approach to ISI mitigation, in scenarios exhibiting long CIR
+      - SC-FDE used in 3GPP LTE
+      - most mentioned FDE algorithms only suitable for N_r > N_t scenarios
+      - TDE: transmit vectors of SM schemes are sparsely populated, since only single ta activated
+      - order of ML detection complexity in ZP-aided SC-SM scheme only depends on CIR length rather than frame length
+      - proposed LSS detector also capable of efficient operation in challenging rank-deficient channel scenarios
+      - TEQ: classic scheme is effective soft-decision receiver in f-s fading channels, incorporating eq and channel decoding
       - ...
       
       
