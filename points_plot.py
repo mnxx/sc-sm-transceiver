@@ -19,20 +19,22 @@ import matplotlib.pyplot as plt
 
 
 # Testing the 2x1 transmission scheme.
-#points2 = [0.396, 0.32075, 0.24975, 0.168375, 0.115225, 0.066375, 0.036375,  0.0156, 0.00715, 0.0029, 0.00115]
-#points4 = [0.30975, 0.2535, 0.1565, 0.101125, 0.0395, 0.02, 0.007, 0.0023875, 0.00055, 0.0002125,  0.000075]
+points2x1_2 = [0.38358625, 0.32032875, 0.2498675, 0.17789625, 0.1153075, 0.06456375, 0.032965, 0.0156525, 0.0067, 0.00285875, 0.00122875]
+points2x1_4 = [0.3185475, 0.244315, 0.167215, 0.097645, 0.047265, 0.01987875, 0.00742625, 0.002215, 0.00056125, 0.00014, 2.25e-05]
 
 # Testing the 2x2 transmission scheme.
-points2 = [0.23425, 0.151, 0.085125, 0.031625, 0.0115, 0.003125, 0.001,  0.0002375, 0.0000625, 0.00001375, 0.0]
-points4 = [0.152605, 0.0790525, 0.03022125, 0.00879875, 0.0017375, 0.00026875, 3.5e-05, 0.0, 0.0, 0.0, 0.0] 
+points2x2_2 = [0.2286025, 0.14755625, 0.07947625, 0.03591875, 0.01272125, 0.0036375, 0.0009675, 0.00016375, 2e-05, 0.0, 0.0]
+points2x2_4 = [0.152605, 0.0790525, 0.03022125, 0.00879875, 0.0017375, 0.00026875, 3.5e-05, 0.0, 0.0, 0.0, 0.0] 
 
 # BER is measured for the following SNRs.
 steps = np.arange(0, 22, 2)
 
 # Plot the results in a BER over SNR plot.
 plt.title('Performance Analysis - BER/SNR')
-plt.plot(steps, points2, 'r-<', label='LSS, M=2')
-plt.plot(steps, points4, 'b-o', label='LSS, M=4')
+plt.plot(steps, points2x1_2, 'r-<', label='LSS, M=2')
+plt.plot(steps, points2x1_4, 'b-o', label='LSS, M=4')
+#plt.plot(steps, points2x2_2, 'r-<', label='LSS, M=2')
+#plt.plot(steps, points2x2_4, 'b-o', label='LSS, M=4')
 plt.axis([0, 20, 0.00001, 1])
 plt.xlabel('SNR')
 plt.ylabel('BER')

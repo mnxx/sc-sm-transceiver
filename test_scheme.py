@@ -21,7 +21,7 @@ def main():
     """ Main function. """
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    setup = (2, 2)
+    setup = (2, 1)
     # Frame length of the transmission - K symbols for each transmission.
     k = 4
     # Number of multipath links.
