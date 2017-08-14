@@ -10,7 +10,7 @@
 """ Test of the implementation of the Single Carrier Spatial Modulation scheme. """
 
 
-import sys
+import time
 from modulation import BPSK as bpsk
 from channel import MIMOChannel as h
 from sc_sm_transceiver import Transceiver as tr
@@ -21,7 +21,7 @@ def main():
     """ Main function. """
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    setup = (2, 1)
+    setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
     k = 4
     # Number of multipath links.
@@ -29,41 +29,67 @@ def main():
     # Length of the Zero-Prefix.
     zp_len = p - 1
     # Signal to Noise Ratio.
-    snr = int(sys.argv[1])
+    #snr = int(sys.argv[1])
+    snr = 0
     # M algorithm: breadth-first search with M survivors.
-    m = int(sys.argv[2])
+    #m = int(sys.argv[2])
+    m = 4
 
     # Use a linear modulation scheme.
     modulation = bpsk()
 
     # Initiate the transmission: create a transmission frame.
     transceiver = tr(setup, modulation.get_symbols())
-    #tx_frame = transceiver.create_transmission_frame(k)
-    tx_frame = transceiver.transmit_frame(k, zp_len)
 
     # Simulate the influence of a frequency-selective fading channel.
     channel = h(k, p, setup, snr)
-    rx_frame = channel.apply_channel(tx_frame)
-
-    # Remove Zero-Pad from received frame.
-    #rx_frame = transceiver.remove_zero_pad(rx_frame, zp_len)
-    # Channel estimation: For now, perfect Channel State Information is assumed.
 
     # Detect the sent frame using the M-algorithm based LSS-ML detector.
     detector = det(setup, m)
-    detected_frame = detector.detect(k,
-                                     transceiver.get_symbol_list(),
-                                     channel.get_channel_matrix(),
-                                     rx_frame)
 
-    # Show the number of bit errors which occurred.
-    count = 0
-    tx_frame = tx_frame.flatten()
-    detected_frame = [symbol for sm_symbol in detected_frame for symbol in sm_symbol]
-    for index in range(0, k * setup[0]):
-        if tx_frame[index] != detected_frame[index]:
-            count += 1
-    print(count)
+    # LOOP FOR TESTING PURPOSES.
+    rounds = 100000
+    # BER is measured for the following SNRs.
+    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    # The resulting BER values are stored in a list.
+    points = []
+    for step in steps:
+        start = time.time()
+        count = 0
+        channel.set_snr(step)
+        for _ in range(0, rounds):
+            #tx_frame = transceiver.create_transmission_frame(k)
+            tx_frame = transceiver.transmit_frame(k, zp_len)
+            rx_frame = channel.apply_channel(tx_frame)
+
+            # Remove Zero-Pad from received frame.
+            #rx_frame = transceiver.remove_zero_pad(rx_frame, zp_len)
+            # Channel estimation: For now, perfect Channel State Information is assumed.
+
+            # Detect the sent frame using the M-algorithm based LSS-ML detector.
+            detected_frame = detector.detect(k,
+                                             transceiver.get_symbol_list(),
+                                             channel.get_channel_matrix(),
+                                             rx_frame)
+
+            ber = count / (k * setup[0] * rounds)
+            # Show the number of bit errors which occurred.
+            tx_frame = tx_frame.flatten()
+            detected_frame = [symbol for sm_symbol in detected_frame for symbol in sm_symbol]
+            for index in range(0, k * setup[0]):
+                if tx_frame[index] != detected_frame[index]:
+                    count += 1
+
+        # Measure the passed time.
+        diff = time.time() - start
+        # Write result in console.
+        print(str(count) + " bits in " + str(rounds) + " tests were wrong! \n > BER = "
+              + str(count / (k * setup[0] * rounds)) + "\n > In "
+              + str(diff) + " seconds.")
+        # Append result to the list.
+        points.append(ber)
+
+    print(points)
 
 if __name__ == '__main__':
     main()

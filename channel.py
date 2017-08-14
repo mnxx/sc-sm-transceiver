@@ -43,6 +43,10 @@ class MIMOChannel:
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
 
+    def set_snr(self, new_snr):
+        """ Set the SNR of the channel to a new value. """
+        self.snr = new_snr
+
     def get_channel_matrix(self):
         """ Return the created channel matrix. Use for perfect Channel State Information. """
         return self.channel_matrix
