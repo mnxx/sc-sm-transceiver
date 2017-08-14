@@ -41,10 +41,10 @@ for step in steps:
     # Sum the erroneus bits for each iteration.
     count = 0
     for i in range(0, rounds):
-        errors = subprocess.check_output(["python3", "proposed_detector.py", str(step), "2"])
+        errors = subprocess.check_output(["python3", "proposed_detector.py", str(step), "4"])
         count += int(errors)
 
-    # Measure the passed time.
+    # Measure the passed tim.e
     diff = time.time() - start
 
     ber = count / (symbols * symbol_size * rounds)

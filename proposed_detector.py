@@ -163,7 +163,7 @@ def main():
     N_t = 2
 
     # Number of reception antennas.
-    N_r = 1
+    N_r = 2
 
     # Frame length of our transmission - K symbols for each transmission.
     K = 4
