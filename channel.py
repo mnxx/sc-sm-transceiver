@@ -32,8 +32,8 @@ class MIMOChannel:
         sub_matrices = dict()
         for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
-            sub_matrices[_] = (np.random.randn(self.n_r, self.n_t) / 2
-                               + 1j * np.random.randn(self.n_r, self.n_t) / 2)
+            sub_matrices[_] = (np.random.randn(self.n_r, self.n_t) / np.sqrt(2)
+                               + 1j * np.random.randn(self.n_r, self.n_t) / np.sqrt(2))
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=sub_matrices[0].dtype)
