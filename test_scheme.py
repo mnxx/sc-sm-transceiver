@@ -11,6 +11,7 @@
 
 
 import time
+import numpy as np
 from modulation import BPSK as bpsk
 from channel import MIMOChannel as h
 from sc_sm_transceiver import Transceiver as tr
@@ -51,13 +52,13 @@ def main():
     rounds = 100000
     # BER is measured for the following SNRs.
     steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [0]
+    #steps = [10]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
         start = time.time()
         count = 0
-        channel.set_snr(step)
+        channel.set_snr(step - np.log2(setup[1]))
         for _ in range(0, rounds):
             #tx_frame = transceiver.create_transmission_frame(k)
             tx_frame = transceiver.transmit_frame(k, zp_len)
@@ -73,7 +74,6 @@ def main():
                                              channel.get_channel_matrix(),
                                              rx_frame)
 
-            ber = count / (k * setup[0] * rounds)
             # Show the number of bit errors which occurred.
             tx_frame = tx_frame.flatten()
             detected_frame = [symbol for sm_symbol in detected_frame for symbol in sm_symbol]
@@ -81,12 +81,16 @@ def main():
                 if tx_frame[index] != detected_frame[index]:
                     count += 1
 
+        # BER calculation: Take combining gain into account, i.e. multiply by N_r.
+        ber = count / (k * setup[0] * rounds)
+        #ber = count / (k * setup[0] * rounds) * np.sqrt(2)
+        #ber = count / (k * setup[0] * rounds)
         # Measure the passed time.
         diff = time.time() - start
         # Write result in console.
-        print(str(count) + " bits in " + str(rounds) + " tests were wrong! \n > BER = "
-              + str(count / (k * setup[0] * rounds)) + "\n > In "
-              + str(diff) + " seconds.")
+        print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
+              + "> BER = " + str(ber) + "\n"
+              + "> In " + str(diff) + " seconds.")
         # Append result to the list.
         points.append(ber)
 
