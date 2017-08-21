@@ -62,3 +62,31 @@ class MIMOChannel:
         """ Directly apply the effects of the frequency selective channel on a signal vector. """
         self.create_channel_matrix()
         return (self.channel_matrix).dot(signal_vector) + self.create_awgn_vector()
+
+
+class LTEChannel(MIMOChannel):
+    """ Class implementing different LTE channel scenarios defined by 3GPP. """
+
+    #def __init__(self)
+    def create_channel_matrix(self):
+        """ Create the corresponding Block-Toeplitz channel matrix. """
+        nb_rows = self.frame_len + self.multipaths - 1
+        nb_columns = self.frame_len
+        # A dictionary containing the discrete delay and its corresponding power profile is used.
+        profile = [(0, 0), (30, -1.5), (150, -1.4)]
+        # Each sub-matrix has a dimension of N_r x N_t.
+        sub_matrices = dict()
+        for _ in range(0, self.multipaths):
+            # Only a certain number of taps are used in the channel model.
+            if _ > len(profile):
+                break
+            # Number of rows and columns of each sub-matrix is N_r and N_t.
+            #sub_matrices[_] = 
+        # Create 4-dimensional matrix using the sub-matrices.
+        self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
+                                       dtype=sub_matrices[0].dtype)
+        for index, sub_matrix in sub_matrices.items():
+            for element in range(nb_columns):
+                self.channel_matrix[index + element, :, element, :] = sub_matrix
+        # Flatten the 4-dimensional matrix.
+        self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
