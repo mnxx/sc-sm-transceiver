@@ -82,6 +82,30 @@
     - scheme offers better BER performance than PIC-R-SIC with reduced complexity
     - with increasing M, scheme approaches ML detector
 
+
+### Effects of Channel Estimation on Spatial Modulation
+    - simultaneous pilot transmissions from the AEs are impossible in SM scheme
+    - performance penaly (BER), while relying on realistiv imperfect channel-estimation
+    - SM especially beneficial for a high number of AEs, thus effects of pilot overhead and channel estimation errors
+    - proposed schemes have the potential of combating above-mentiones CSU-error related limitations
+      - training symbols P w/ power constraint tr[PP^H] = t (t is pilot length)
+      - in the single-RF SM transmitter the pilot matrix P is sparse, each column has only a single non-zero element
+      - 3 dB performance penalty over the perfect CSI scenario in simplified edge case
+      - no feedback from receiver needed
+      - Reduced-Complexity Joint Channel Estimation and Data Detection:
+      - reduces effects of CE error without increasing pilot overhead
+      - 1) initial channel estimation w/ MMSE criterion, iteration index = 0
+      - 2) frame of SM symbols are detected w/ reduced-complexity ML, attain estimated symbol block
+      - 3) update channel estimates based on MMSE criterion
+      - 4) iteration or termination, if breaking condition - terminate iteration, otherwise i = i+1 & goto 2)
+      - termination constant beta has to be sufficiently low
+      - Non-Coherently Detected Single-RF STSK Scheme
+      - [...]
+      - proposed scheme closely approaches perfect-CSI curve, while conventional CE exhibits 3-dB degradation
+    - increasing number of tas increases transmission power of pilot symbols, bandwidth efficiency is reduced
+    - low SNR as well as correlated channels - single-RF based pilot transmission suffers from performance loss
+
+
 ## BACKGROUND PAPERS
 
 ### Spatial Modulation Aided Zero-Padded Single Carrier Transmission for Dispersive Channels
