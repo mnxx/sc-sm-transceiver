@@ -11,7 +11,6 @@
 
 
 import time
-import numpy as np
 from modulation import BPSK as bpsk
 from channel import MIMOChannel as h
 from sc_sm_transceiver import Transceiver as tr
@@ -22,7 +21,7 @@ def main():
     """ Main function. """
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    setup = (2, 2)
+    setup = (2, 1)
     # Frame length of the transmission - K symbols for each transmission.
     k = 4
     # Number of multipath links.
@@ -34,7 +33,7 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 4
+    m = 2
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -58,7 +57,7 @@ def main():
     for step in steps:
         start = time.time()
         count = 0
-        channel.set_snr(step - np.log2(setup[1]))
+        channel.set_snr(step)
         for _ in range(0, rounds):
             #tx_frame = transceiver.create_transmission_frame(k)
             tx_frame = transceiver.transmit_frame(k, zp_len)
@@ -71,7 +70,8 @@ def main():
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
             detected_frame = detector.detect(k,
                                              transceiver.get_symbol_list(),
-                                             channel.get_channel_matrix(),
+                                             #channel.get_channel_matrix(),
+                                             channel.get_ce_error_matrix(20),
                                              rx_frame)
 
             # Show the number of bit errors which occurred.

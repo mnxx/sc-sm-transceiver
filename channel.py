@@ -23,21 +23,22 @@ class MIMOChannel:
         self.n_r = antenna_setup[1]
         self.snr = snr
         self.channel_matrix = np.array([])
+        self.sub_matrices = dict()
 
     def create_channel_matrix(self):
         """ Create the corresponding Block-Toeplitz channel matrix. """
         nb_rows = self.frame_len + self.multipaths - 1
         nb_columns = self.frame_len
         # Each sub-matrix has a dimension of N_r x N_t.
-        sub_matrices = dict()
+        #sub_matrices = dict()
         for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
-            sub_matrices[_] = (np.random.randn(self.n_r, self.n_t)
-                               + 1j * np.random.randn(self.n_r, self.n_t)) / np.sqrt(2)
+            self.sub_matrices[_] = (np.random.randn(self.n_r, self.n_t)
+                                    + 1j * np.random.randn(self.n_r, self.n_t)) / np.sqrt(2)
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
-                                       dtype=sub_matrices[0].dtype)
-        for index, sub_matrix in sub_matrices.items():
+                                       dtype=self.sub_matrices[0].dtype)
+        for index, sub_matrix in self.sub_matrices.items():
             for element in range(nb_columns):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
@@ -63,6 +64,27 @@ class MIMOChannel:
         self.create_channel_matrix()
         return (self.channel_matrix).dot(signal_vector) + self.create_awgn_vector()
 
+    def get_ce_error_matrix(self, ce_snr):
+        """ Add Gaussian noise to channel coefficients to simulate channel-estimation errors. """
+        ce_sub_matrices = dict()
+        for _ in range(0, self.multipaths):
+            ce_sub_matrices[_] = (self.sub_matrices[_]
+                                  + np.random.normal(0, np.sqrt(10**(-ce_snr / 10) / 2),
+                                                     (self.n_r, self.n_t))
+                                  + 1j * np.random.normal(0, np.sqrt(10**(-ce_snr / 10) / 2),
+                                                          (self.n_r, self.n_t)))
+        nb_rows = self.frame_len + self.multipaths - 1
+        nb_columns = self.frame_len
+        # Create 4-dimensional matrix using the sub-matrices.
+        ce_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
+                                     dtype=ce_sub_matrices[0].dtype)
+        for index, sub_matrix in ce_sub_matrices.items():
+            for element in range(nb_columns):
+                ce_channel_matrix[index + element, :, element, :] = sub_matrix
+        # Flatten the 4-dimensional matrix.
+        ce_channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+        return ce_channel_matrix
+
 
 class LTEChannel(MIMOChannel):
     """ Class implementing different LTE channel scenarios defined by 3GPP. """
@@ -81,7 +103,7 @@ class LTEChannel(MIMOChannel):
             if _ > len(profile):
                 break
             # Number of rows and columns of each sub-matrix is N_r and N_t.
-            #sub_matrices[_] = 
+
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=sub_matrices[0].dtype)
