@@ -2,15 +2,16 @@
 
 ## To Do
 
-### General
+### Next 7 days.
 
-- read additional papers
-- merge scripts
-- implement synchronization
-- implement channel estimation
+- write down additional papers
+- improve current code design
+- generalize channel estimation
+- implement synchronization: whole frame / schmidl-cox approach
 
-### Right Now
+### Before Monday.
 
-- clarify zero prefix usage
-- visual efficiency analysis (2x1, 2x2, 1x2)
-- generalize sm symbol creation
+- implement channel estimation: generate gold sequences
+- determine length sequence length w/ CE function
+- implement channel estimation: create training frame
+- implement channel estimation: correlate frame for CIR
