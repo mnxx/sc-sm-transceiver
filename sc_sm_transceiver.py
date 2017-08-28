@@ -162,3 +162,23 @@ class LSSDetector:
         """ Function performing single-stream ML for each step in the detection. """
 
 
+class ChannelEstimator:
+    """
+    Implementation of a channel estimation approach for the Single Carrier Spatial Modulation scheme.
+    Channel estimation is done by observing the channel impulse response, using a spreading sequence,
+    i.e. gold sequence, and subsequent correlation.
+    """
+
+    def __init__(self, antenna_setup):
+        self.n_t = antenna_setup[0]
+        self.n_r = antenna_setup[1]
+
+    def generate_gold_sequence(self, sequence_length):
+        """ Function to create a gold sequence of a given size. """
+        # Generator function.
+        sequence_1 = [2, 5, 9]
+        sequence_2 = [3, 4, 6, 8, 9]
+        seq = [sequence_1, sequence_2]
+        for shift in range(0, sequence_length):
+            seq.append(np.logical_xor(sequence_1, np.roll(sequence_2, -shift)))
+        return seq
