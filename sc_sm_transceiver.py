@@ -173,12 +173,32 @@ class ChannelEstimator:
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
 
+    def lfsr(self, polynomials, seed):
+        """ Function to simulate the operations of an LFSR. """
+        register = np.array(seed, dtype='bool')
+        feedback_list = []
+        for _ in range(0, 2**len(seed) - 1):
+            # Output of the register.
+            feedback = register[0]
+            feedback_list.append(feedback)
+            # Calculate next iteration.
+            for tab in polynomials:
+                feedback ^= register[tab]
+            # Shift register.
+            register = np.roll(register, -1)
+            register[-1] = feedback
+        return feedback_list
+
     def generate_gold_sequence(self, sequence_length):
         """ Function to create a gold sequence of a given size. """
         # Generator function.
-        sequence_1 = [2, 5, 9]
-        sequence_2 = [3, 4, 6, 8, 9]
+        pair_1 = [2, 5, 9]
+        pair_2 = [3, 4, 6, 8, 9]
+        seed = list(np.ones(sequence_length))
+        sequence_1 = self.lfsr(pair_1, seed)
+        sequence_2 = self.lfsr(pair_2, seed)
         seq = [sequence_1, sequence_2]
-        for shift in range(0, sequence_length):
+        #print(len(sequence_1))
+        for shift in range(0, len(sequence_1)):
             seq.append(np.logical_xor(sequence_1, np.roll(sequence_2, -shift)))
         return seq
