@@ -21,7 +21,7 @@ def main():
     """ Main function. """
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    setup = (2, 1)
+    setup = (2, 4)
     # Frame length of the transmission - K symbols for each transmission.
     k = 4
     # Number of multipath links.
@@ -48,7 +48,7 @@ def main():
     detector = det(setup, m)
 
     # LOOP FOR TESTING PURPOSES.
-    rounds = 100000
+    rounds = 10000
     # BER is measured for the following SNRs.
     steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
     #steps = [10]
@@ -61,7 +61,7 @@ def main():
         for _ in range(0, rounds):
             #tx_frame = transceiver.create_transmission_frame(k)
             tx_frame = transceiver.transmit_frame(k, zp_len)
-            rx_frame = channel.apply_channel(tx_frame)
+            rx_frame = channel.apply_channel_without_awgn(tx_frame)
 
             # Remove Zero-Pad from received frame.
             #rx_frame = transceiver.remove_zero_pad(rx_frame, zp_len)
@@ -71,7 +71,7 @@ def main():
             detected_frame = detector.detect(k,
                                              transceiver.get_symbol_list(),
                                              #channel.get_channel_matrix(),
-                                             channel.get_ce_error_matrix(20),
+                                             channel.get_ce_error_matrix(10),
                                              rx_frame)
 
             # Show the number of bit errors which occurred.

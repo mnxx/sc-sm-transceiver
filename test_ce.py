@@ -28,8 +28,10 @@ def ccorr(x, y):
 
 def main():
     ce = ChannelEstimator((2,1))
-    seq =ce.generate_gold_sequence(10)
-    print(len(seq[-1]))
+    seq =ce.generate_gold_sequence(8)
+    print(len(seq))
+    print(len(seq[0]))
+    print(len(seq[-10]))
 
     plt.figure()
     plt.subplot(2,2,1)
@@ -39,17 +41,21 @@ def main():
     #print(len(g0))
     #print(int((len(g0)/2-1)))
     plt.plot((np.roll(ccorr(g0, g0).real, int(len(g0)/2-1))))
+    #plt.axis([-100, 1100, -100, 1100])
     plt.subplot(2,2,2)
     plt.title('Autocorrelation gold[30]')
     g30 = np.where(seq[-1], 1.0, -1.0)
     plt.plot((np.roll(ccorr(g30, g30).real, int(len(g30)/2-1))))
+    #plt.axis([-100, 1100, -100, 1100])
     plt.subplot(2,2,3)
     plt.title('Crosscorrelation gold[0] gold[1]')
     g1 = np.where(seq[1], 1.0, -1.0)
     plt.plot((np.roll(ccorr(g0, g1).real, int(len(g0)/2-1))))
+    #plt.axis([-100, 1100, -100, 1100])
     plt.subplot(2,2,4)
     plt.title('Crosscorrelation gold[0] gold[1024]')
     plt.plot((np.roll(ccorr(g0, g30).real, int(len(g0)/2-1))))
+    #plt.axis([-100, 1100, -100, 1100])
     plt.show()
 
 if __name__ == '__main__':

@@ -64,15 +64,24 @@ class MIMOChannel:
         self.create_channel_matrix()
         return (self.channel_matrix).dot(signal_vector) + self.create_awgn_vector()
 
+    def apply_channel_without_awgn(self, signal_vector):
+        """ Directly apply the frequency selective channel without AWGN on a signal vector. """
+        self.create_channel_matrix()
+        return (self.channel_matrix).dot(signal_vector)
+
     def get_ce_error_matrix(self, ce_snr):
         """ Add Gaussian noise to channel coefficients to simulate channel-estimation errors. """
         ce_sub_matrices = dict()
         for _ in range(0, self.multipaths):
+            #print(self.sub_matrices[_])
             ce_sub_matrices[_] = (self.sub_matrices[_]
                                   + np.random.normal(0, np.sqrt(10**(-ce_snr / 10) / 2),
                                                      (self.n_r, self.n_t))
                                   + 1j * np.random.normal(0, np.sqrt(10**(-ce_snr / 10) / 2),
                                                           (self.n_r, self.n_t)))
+            #print("x")
+            #print(ce_sub_matrices[_])
+            #print("---")
         nb_rows = self.frame_len + self.multipaths - 1
         nb_columns = self.frame_len
         # Create 4-dimensional matrix using the sub-matrices.
