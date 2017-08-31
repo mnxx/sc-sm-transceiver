@@ -14,6 +14,26 @@ import random
 import numpy as np
 
 
+def flatten_list(given_list_of_lists):
+    """ Function to flatten a list of lists. """
+    given_list_of_lists = list(given_list_of_lists)
+    return [symbol for sub_list in given_list_of_lists for symbol in sub_list]
+
+def split_list(given_list, block_length):
+    """ Function to split a list into blocks of a given block length. """
+    split = []
+    # Flatten the given list.
+    list_to_split = flatten_list(given_list)
+    nb_blocks = np.ceil(len(list_to_split) / block_length)
+    # Split the flattened list into blocks.
+    for step in range(0, nb_blocks):
+        split.append(list_to_split[step * block_length : step * block_length + block_length])
+    # If last frame does not have enough symbols: Add zeros.
+    while len(split[-1]) < block_length:
+        split[-1].append(0)
+    return split
+
+
 class Transceiver:
     """
     Implementation of the transmission of the scheme.
@@ -22,6 +42,7 @@ class Transceiver:
     def __init__(self, antenna_setup, modulation_symbols):
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
+        self.modulation_index = int(np.log2(len(modulation_symbols)))
         self.possible_symbols = self._create_possible_symbols(modulation_symbols)
 
     def _create_possible_symbols(self, modulation_symbols):
@@ -36,8 +57,51 @@ class Transceiver:
         return possible_symbols
 
     def get_symbol_list(self):
-        """ Return a list of the possible SM-symbols. """
+        """ Return a list of the possible SM symbols. """
         return self.possible_symbols
+
+    def training_data_to_blocks(self, training_sequences):
+        """ Create a training vector by modulating the data bits to modulation symbols. """
+        symbols = []
+        # Use a different training sequence for each transmit antenna.
+        for sequence_index in range(0, self.n_t):
+            # For now: Use sequences from 2 onward.
+            training_sequence = training_sequences[sequence_index + 2]
+            # Split training sequence into blocks and concatenate with the previous sequences.
+            symbols += split_list(training_sequence, self.modulation_index)
+        return symbols
+
+    def data_to_blocks(self, data):
+        """ Create a transmit vector by modulating the data bits to SC-SM symbols. """
+        return int(np.log2(self.n_t)) + data
+
+    def create_sm_symbol(self, antenna_index, modulated_symbol):
+        """ Create Spatial Modulation symbols from a given antenna index and modulated symbols. """
+        # Convention: Antenna indices start with 1.
+        antenna_index = antenna_index + 1
+        # The training data blocks are transformed to SM symbols for each antenna.
+        return [0] * (antenna_index - 1) + [modulated_symbol] + [0] * (self.n_t - antenna_index)
+
+    def training_symbols_to_frame(self, training_symbols):
+        """ Function to create frames from modulated training symbols. """
+        training_frame = []
+        # Use a training sequence for each transmit antenna.
+        for antenna_index in range(0, self.n_t):
+            # The structure of the training_symbol list
+            # has to imply a new spread sequence for each new antenna.
+            for modulated_symbol in training_symbols:
+                training_frame.append(self.create_sm_symbol(antenna_index, modulated_symbol))
+        return training_frame
+
+    def data_symbols_to_frame(self, index_list, data_symbols):
+        """ Function to create SC-SM data frames from the index and the modulated data symbols. """
+        return
+
+    def create_frame(self, symbol_vector):
+        return symbol_vector
+
+    def create_training_frame(self, k):
+         """ Create a training frame using k symbols from a list of possible symbols. """
 
     def create_transmission_frame(self, k):
         """ Create a transmission frame using k random symbols from a list of possible symbols. """
@@ -191,14 +255,15 @@ class ChannelEstimator:
 
     def generate_gold_sequence(self, sequence_length):
         """ Function to create a gold sequence of a given size. """
-        # Generator function.
-        pair_1 = [2, 5, 9]
-        pair_2 = [3, 4, 6, 8, 9]
+        # Generator polynomials:
+        # https://github.com/mubeta06/python/blob/master/signal_processing/sp/gold.py
+        polynomials = {5:[[2],[1,2,3]], 6:[[5],[1,4,5]], 7:[[4],[4,5,6]],
+                        8:[[1,2,3,6,7],[1,2,7]], 9:[[5],[3,5,6]],
+                       10:[[2,5,9],[3,4,6,8,9]], 11:[[9],[3,6,9]]}
         seed = list(np.ones(sequence_length))
-        sequence_1 = self.lfsr(pair_1, seed)
-        sequence_2 = self.lfsr(pair_2, seed)
+        sequence_1 = self.lfsr(polynomials[sequence_length][0], seed)
+        sequence_2 = self.lfsr(polynomials[sequence_length][1], seed)
         seq = [sequence_1, sequence_2]
-        #print(len(sequence_1))
         for shift in range(0, len(sequence_1)):
             seq.append(np.logical_xor(sequence_1, np.roll(sequence_2, -shift)))
         return seq
