@@ -95,7 +95,7 @@ class Transceiver:
         # The structure of the training_symbol list
         # has to imply a new spread sequence for each new antenna.
         for index, modulated_symbol in enumerate(training_symbols):
-            training_frame.append(self.create_sm_symbol(int(index / seq_len), modulated_symbol))
+            training_frame.append(self.sm_modulation(int(index / seq_len), modulated_symbol))
         # Assume symbols vector has size K * N_t (BPSK).
         frame_list = split_list(flatten_list(training_frame), self.k * self.n_t)
         for index, frame in enumerate(frame_list):
