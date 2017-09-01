@@ -61,6 +61,13 @@ class MIMOChannel:
 
     def apply_channel(self, signal_vector):
         """ Directly apply the effects of the frequency selective channel on a signal vector. """
+        return (self.channel_matrix).dot(signal_vector) + self.create_awgn_vector()
+
+    def apply_new_channel(self, signal_vector):
+        """
+        Directly apply the effects of the frequency selective channel on a signal vector.
+        Used for single frame analysis, or coherence time is equal to frame duration.
+        """
         self.create_channel_matrix()
         return (self.channel_matrix).dot(signal_vector) + self.create_awgn_vector()
 

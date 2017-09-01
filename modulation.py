@@ -26,3 +26,21 @@ class BPSK(Modulation):
 
     def __init__(self):
         self.symbol_list = [[1], [-1]]
+
+    def modulate(self, blocks):
+        """ Modulate blocks of bits to symbols. """
+        for index, block in enumerate(blocks):
+            if block == [0]:
+                blocks[index] = -1
+            else:
+                blocks[index] = 1
+        return blocks
+
+    def demodulate(self, symbols):
+        """ Demodulate blocks of symbols to bits. """
+        for index, symbol in enumerate(symbols):
+            if symbol == [-1]:
+                symbols[index] = 0
+            else:
+                symbols[index] = 1
+        return symbols
