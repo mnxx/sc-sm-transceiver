@@ -59,6 +59,10 @@ class Transceiver:
         """ Return a list of the possible SM symbols. """
         return self.possible_symbols
 
+    def bits_to_index(self, bits):
+        """ Return the decimal value of a series of bits. """
+        return
+
     def training_data_to_blocks(self, training_sequences):
         """ Create a training vector by modulating the data bits to modulation symbols. """
         symbols = []
@@ -74,7 +78,14 @@ class Transceiver:
 
     def data_to_blocks(self, data):
         """ Create a transmit vector by modulating the data bits to SC-SM symbols. """
-        return int(np.log2(self.n_t)) + data
+        symbols = []
+        nb_antenna_bits = int(np.log2(self.n_t))
+        # Put the data bits into spatial modulation blocks.
+        symbols += split_list(data, self.modulation_index + nb_antenna_bits)
+        # Extract bits to convey antenna index information and bits to modulate.
+        for index, symbol in enumerate(symbols):
+            symbols[index] = [symbol[: nb_antenna_bits], symbol[nb_antenna_bits :]]
+        return symbols
 
     def sm_modulation(self, antenna_index, modulated_symbol):
         """ Create Spatial Modulation symbols from a given antenna index and modulated symbols. """
@@ -85,7 +96,15 @@ class Transceiver:
 
     def sm_demodulation(self, sm_symbol):
         """ Demodulate Spatial Modulation symbols to an antenna index and a modulated symbol. """
-        
+        antenna_index = 0
+        modulated_symbol = 0
+        for symbol in sm_symbol:
+            if symbol == 0:
+                antenna_index += 1
+            else:
+                modulated_symbol = symbol
+                break
+        return [int(bit) for bit in list(format(antenna_index, 'b'))] + [modulated_symbol]
 
     def training_symbols_to_frames(self, training_symbols):
         """ Function to create frames from modulated training symbols. """
@@ -102,15 +121,13 @@ class Transceiver:
             frame_list[index] = np.reshape(frame, (self.k * self.n_t, 1))
         return frame_list
 
-    def data_symbols_to_frame(self, index_list, data_symbols):
+    def data_symbols_to_frames(self, data_symbols):
         """ Function to create SC-SM data frames from the index and the modulated data symbols. """
-        return
-
-    def create_frame(self, symbol_vector):
-        return symbol_vector
-
-    def create_training_frame(self, k):
-         """ Create a training frame using k symbols from a list of possible symbols. """
+        # Assume symbols vector has size K * N_t (BPSK).
+        frame_list = split_list(flatten_list(data_symbols), self.k * self.n_t)
+        for index, frame in enumerate(frame_list):
+            frame_list[index] = np.reshape(frame, (self.k * self.n_t, 1))
+        return frame_list
 
     def create_transmission_frame(self, k):
         """ Create a transmission frame using k random symbols from a list of possible symbols. """
@@ -245,6 +262,10 @@ class ChannelEstimator:
     def __init__(self, antenna_setup):
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
+
+    def ccorr(self, x_array, y_array):
+        """ Calculate the circular correlation of 1-D input numpy arrays using DFT. """
+        return np.fft.ifft(np.fft.fft(x_array) * np.fft.fft(y_array).conj())
 
     def lfsr(self, polynomials, seed):
         """ Function to simulate the operations of an LFSR. """

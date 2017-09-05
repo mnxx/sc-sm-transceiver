@@ -36,7 +36,14 @@ class BPSK(Modulation):
                 blocks[index] = 1
         return blocks
 
-    def demodulate(self, symbols):
+    def demodulate(self, symbol):
+        """ Demodulate blocks of symbols to bits. """
+        if symbol == -1:
+            return 0
+        else:
+            return 1
+
+    def demodulate_list(self, symbols):
         """ Demodulate blocks of symbols to bits. """
         for index, symbol in enumerate(symbols):
             if symbol == [-1]:

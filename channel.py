@@ -128,3 +128,26 @@ class LTEChannel(MIMOChannel):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+
+
+class HardCodedChannel(MIMOChannel):
+    """ Class defining hard coded channel scenarios to facilitate analyses. """
+
+    def create_channel_matrix(self):
+        """ Create the corresponding Block-Toeplitz channel matrix. """
+        nb_rows = self.frame_len + self.multipaths - 1
+        nb_columns = self.frame_len
+        #for _ in range(0, self.multipaths):
+            # Number of rows and columns of each sub-matrix is N_r and N_t.
+            # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
+        self.sub_matrices[0] = np.array([[0.8, 0.7], [0.6, 0.5]])
+        self.sub_matrices[1] = np.array([[0, 0], [0, 0]])
+        self.sub_matrices[2] = np.array([[0.5, 0.5], [0.5, 0.5]])
+        # Create 4-dimensional matrix using the sub-matrices.
+        self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
+                                       dtype=self.sub_matrices[2].dtype)
+        for index, sub_matrix in self.sub_matrices.items():
+            for element in range(nb_columns):
+                self.channel_matrix[index + element, :, element, :] = sub_matrix
+        # Flatten the 4-dimensional matrix.
+        self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)

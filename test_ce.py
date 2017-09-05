@@ -28,17 +28,17 @@ def ccorr(x, y):
 
 def main():
     ce = ChannelEstimator((2,1))
-    seq =ce.generate_gold_sequence(8)
+    seq =ce.generate_gold_sequence(5)
     print(len(seq))
     print(len(seq[0]))
-    print(len(seq[-10]))
+    #print(seq[-1])
 
     plt.figure()
     plt.subplot(2,2,1)
     plt.title('Autocorrelation gold[0]')
     g0 = np.where(seq[0], 1.0, -1.0)
     #g0 = seq[0]
-    #print(len(g0))
+    print(g0)
     #print(int((len(g0)/2-1)))
     plt.plot((np.roll(ccorr(g0, g0).real, int(len(g0)/2-1))))
     #plt.axis([-100, 1100, -100, 1100])
