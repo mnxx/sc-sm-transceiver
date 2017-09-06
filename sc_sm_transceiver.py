@@ -259,9 +259,10 @@ class ChannelEstimator:
     i.e. gold sequence, and subsequent correlation.
     """
 
-    def __init__(self, antenna_setup):
+    def __init__(self, antenna_setup, frame_length):
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
+        self.frame_len = frame_length
 
     def ccorr(self, x_array, y_array):
         """ Calculate the circular correlation of 1-D input numpy arrays using DFT. """
@@ -301,3 +302,47 @@ class ChannelEstimator:
         for sub_list in seq:
             seq_list.append(list(np.where(sub_list, 1, 0)))
         return seq_list
+
+    def extract_channel(self, correlated_channel_responses):
+        """ Function to estimate a channel based on a correlation representing a channel response. """
+        channel_matrix = np.array([])
+        sub_matrices = dict()
+        channel_list = []
+        multipaths = []
+        for index, antenna_response in enumerate(correlated_channel_responses):
+            multipaths.append([])
+            best_path = max(antenna_response)
+            # Threshold depends on sequence length and noise.
+            threshold = 0.35 * best_path
+            for val in antenna_response:
+                if val > threshold:
+                    multipaths[index].append(val / best_path)
+        # DIFFERENT NUMBER OF MULTI-PATHS FOR DIFFERENT N_t NOT TAKEN INTO ACCOUNT.
+        nb_multipaths = int(np.ceil(len(multipaths[0]) / self.n_r))
+        # Create list of lists: Each sub-list represents a multi-path.
+        for path in range(0, nb_multipaths):
+            channel_list.append([])
+            # Create a sub-list for each row.
+            for row in range(0, self.n_r):
+                channel_list[path].append([])
+        # Insert the values into the list of lists of lists.
+        for multipath in multipaths:
+            for index, column in enumerate(split_list(multipath, self.n_r)):
+                for row in range(0, self.n_r):
+                    channel_list[index][row].append(column[row])
+        # Create a channel matrix based on the multi-paths.
+        for _ in range(0, nb_multipaths):
+            # Number of rows and columns of each sub-matrix is N_r and N_t.
+            sub_matrices[_] = np.array(channel_list[_])
+        # Create 4-dimensional matrix using the sub-matrices.
+        nb_rows = self.frame_len + nb_multipaths - 1
+        nb_columns = self.frame_len
+        channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
+                                  dtype=sub_matrices[0].dtype)
+        for index, sub_matrix in sub_matrices.items():
+            for element in range(nb_columns):
+                channel_matrix[index + element, :, element, :] = sub_matrix
+        # Flatten the 4-dimensional matrix.
+        channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+        #print(nb_multipaths)
+        return channel_matrix

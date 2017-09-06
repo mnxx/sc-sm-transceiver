@@ -140,9 +140,12 @@ class HardCodedChannel(MIMOChannel):
         #for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
-        self.sub_matrices[0] = np.array([[0.8, 0.7], [0.6, 0.5]])
-        self.sub_matrices[1] = np.array([[0, 0], [0, 0]])
-        self.sub_matrices[2] = np.array([[0.5, 0.5], [0.5, 0.5]])
+        self.sub_matrices[0] = np.array([[1.0, 1.0],
+                                         [1.0, 1.0]])
+        self.sub_matrices[1] = np.array([[0.8, 0.4],
+                                         [0.8, 0.7]])
+        self.sub_matrices[2] = np.array([[0.5, 0.8],
+                                         [0.5, 0.8]])
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=self.sub_matrices[2].dtype)

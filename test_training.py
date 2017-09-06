@@ -26,7 +26,7 @@ def main():
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
     setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
-    k = 4
+    k = 1024
     # Number of multipath links.
     p = 3
     # Length of the Zero-Prefix.
@@ -51,7 +51,7 @@ def main():
     detector = det(setup, m)
 
     # Simulate the channel estimation.
-    channel_estimator = ce(setup)
+    channel_estimator = ce(setup, k)
 
     # LOOP FOR TESTING PURPOSES.
     rounds = 1
@@ -69,7 +69,7 @@ def main():
             bit_list = []
             rx_frames = []
             # TRAINING: Send training frames and estimate the channel.
-            seq_order = 10
+            seq_order = 8
             seq_len = 2**seq_order - 1
             seq = channel_estimator.generate_gold_sequence(seq_order)
             training_blocks = transceiver.training_data_to_blocks(seq)
@@ -101,16 +101,23 @@ def main():
             channel_response = []
             for index, frame in enumerate(tx_frames):
                 tx_frames[index] = frame.flatten().tolist()
+            flat_tx = [symbol for sub_list in tx_frames for symbol in sub_list]
+            nb_frames = int(np.ceil(seq_len / k))
             for antenna in range(0, setup[0]):
                 #gold = np.where(seq[antenna + 2], 1.0, -1.0)
                 #rx_gold = np.where(bit_list[antenna * seq_len : antenna * seq_len + seq_len], 1, 0)
-                flat_tx = [symbol for sub_list in tx_frames for symbol in sub_list]
-                gold = flat_tx[antenna * k * setup[0] * int(np.ceil(seq_len / k)) : antenna * k * setup[0] * int(np.ceil(seq_len / k)) + k * setup[0] * int(np.ceil(seq_len / k))]
-                rx_gold = rx_frames[antenna * (k + p - 1) * setup[0] * int(np.ceil(seq_len / k)) : antenna * (k + p - 1) * setup[0] * int(np.ceil(seq_len / k)) + (k + p - 1) * setup[0] * int(np.ceil(seq_len / k))]
-                print(str(len(gold)) + "  ~  " + str(len(rx_gold)))
-                #print(gold[: 32])
-                #print(rx_gold[: 32])
-                channel_response.append(np.roll(np.correlate(modulation.modulate(seq[antenna + 2]), rx_gold).real, int(len(seq[antenna + 2]) / 2 - 1)))
+                # EDGE CASE: We needed an additional frame for a sequence. Test w/ modulo?
+                gold = flat_tx[antenna * setup[0] * seq_len : antenna * setup[0] * seq_len + setup[0] * seq_len]
+                # If we have multiple frames, we have additional symbols for each frame.
+                #rx_gold = rx_frames[antenna * (k + p - 1) * setup[0] * nb_frames : antenna * (k + p - 1) * setup[0] * int(np.ceil(seq_len / k)) + (k + p - 1) * setup[0] * int(np.ceil(seq_len / k))]
+                rx_gold = rx_frames[antenna * setup[0] * seq_len : antenna * setup[0] * seq_len + setup[0] * seq_len]
+                #print(str(len(gold)) + "  ~  " + str(len(rx_gold)))
+                #print(gold[0 : 32])
+                #print(rx_gold[0 : 64])
+                #print(seq[antenna + 2][100 : 110])
+                #print(rx_gold[100 : 110])
+                #channel_response.append(np.roll(np.correlate(modulation.modulate(seq[antenna + 2]), rx_gold).real, int(len(seq[antenna + 2]) / 2 - 1)))
+                channel_response.append(np.absolute(np.correlate(rx_gold, gold, mode='same').real))
                 #channel_response.append(channel_estimator.ccorr(gold, gold[: 2048]))
                 #(np.roll(ccorr(g0, g0).real, int(len(g0)/2-1))))
             #print(channel.get_channel_matrix())
@@ -123,10 +130,12 @@ def main():
             plt.title('Cross-correlation: Antenna [1]')
             plt.plot(channel_response[1])
             #plt.axis([-100, 1100, -100, 1100])
-            plt.show()
-            break
-            #est_channel = channel_estimator.extract_channel(channel_response)
-            est_channel = channel.get_ce_error_matrix(17)
+            #plt.show()
+            est_channel = channel_estimator.extract_channel(channel_response)
+            #est_channel = channel.get_ce_error_matrix(17)
+            #print(est_channel)
+            #print(est_channel.shape)
+
             # SENDING DATA: Send data using the estimated channel in the receiver.
             #data = ...
             #symbol_blocks = transceiver.data_to_blocks(data)
