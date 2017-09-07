@@ -187,18 +187,50 @@ class LSSDetector:
         for _ in range(0, self.M):
             D.append([])
             e.append(0)
+        nb_paths = 0
         # Decision process is repeated K (the frame length) steps.
-        for step in range(0, frame_len):
+        count = 0
+        count2 = 0
+        # First step: all M paths consist of one symbol: choose M different symbols.
+        possible_first_metrics = []
+        for index, possible_symbol in enumerate(symbol_list):
+            # Reshape list to a numpy array in vector form (K * N_t, 1).
+            #print(str(len(possible_symbol)) + " ~ " + str(self.n_t) + " ~~ " + str(possible_symbol))
+            x_m = np.reshape(possible_symbol, (self.n_t, 1))
+            # All H_x block-sub-matrices are N_r x N_t.
+            h = channel[: self.n_r, : self.n_t]
+            # Compute the metrics for each candidate vector.
+            # Each metric is a tuple of the value and the symbol.
+            metric = ((np.linalg.norm(rx_vector[: self.n_r]
+                                                 - h.dot(x_m)))**2, possible_symbol)
+            possible_first_metrics.append(metric)
+        possible_first_metrics.sort()
+        for m, metric in enumerate(possible_first_metrics[0 : self.M]):
+            # Update the value of the accumulated metrics.
+            e[m] = metric[0]
+            # Find and append the symbol corresponding to the index of the value.
+            # Append the corresponding symbol to the list.
+            D[m].append(metric[1])
+            nb_paths += 1
+        # Subsequent steps allow for adoption of the same symbol, or change to better path with different symbol.
+        for step in range(1, frame_len):
             # Each step we create a list of all the metrics resulting from the possible symbols.
             possible_metrics = []
             # Find the corresponding metrics.
-            for m in range(0, self.M):
+            for m in range(0, nb_paths * len(symbol_list)):
+                # M is upper bound.
+                if m == self.M:
+                    break
                 # Create separate list with the current symbols.
                 possible_symbol_vector = list(D[m])
+                #print("~ " + str(np.mod(count2, 4)) + " ~ " + str(possible_symbol_vector))
                 for possible_symbol in symbol_list:
                     # Add the possible symbol to the separate list.
                     possible_symbol_vector.append(possible_symbol)
                     # Reshape list to a numpy array in vector form (K * N_t, 1).
+                    #count += 1
+                    #print(count)
+                    #print(len(possible_symbol_vector))
                     x_m = np.reshape(possible_symbol_vector, (self.n_t * (step + 1), 1))
                     # All H_x block-sub-matrices are N_r x N_t.
                     h = channel[self.n_r * step : self.n_r * step + self.n_r,
@@ -209,10 +241,7 @@ class LSSDetector:
                                                      - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
                     # Avoid adding the same metric multiple times.
                     # As the metric tuple includes m, different paths can have the same metric value.
-                    if step == 0:
-                        if metric[0] not in [usedMetric[0] for usedMetric in possible_metrics]:
-                            possible_metrics.append(metric)
-                    elif metric not in possible_metrics:
+                    if metric not in possible_metrics:
                         possible_metrics.append(metric)
             # Sort the accumulated metrics by their metric value.
             possible_metrics.sort()
@@ -231,6 +260,9 @@ class LSSDetector:
                     # Append the corresponding symbol to the list.
                     D[m].append(metric[2])
                 else:
+                    # A new path is about to be constructed.
+                    if D[m] == []:
+                        nb_paths += 1
                     # Drop the current symbol list in favor of the list to which the metric belongs.
                     # Avoid appending multiple times by copying as far as the current step allows.
                     D[m] = previous_D[path][: step]
@@ -239,7 +271,9 @@ class LSSDetector:
         # Final detection: Find the frame with the overall minimum metric of the M estimated frames.
         # This time the metric is calculated by a maximum likelihood detection.
         final_metric_list = []
+        #print(D)
         for index, estimated_symbols in enumerate(D):
+            #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
             symbols = np.reshape(estimated_symbols, (self.n_t * frame_len, 1))
             final_metric = ((np.linalg.norm(rx_vector - channel.dot(symbols))**2), index)
             final_metric_list.append(final_metric)

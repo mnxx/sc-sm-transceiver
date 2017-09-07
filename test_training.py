@@ -56,13 +56,14 @@ def main():
     # LOOP FOR TESTING PURPOSES.
     rounds = 1
     # BER is measured for the following SNRs.
-    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [20]
+    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    #steps = [20]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
         start = time.time()
         count = 0
+        data_rounds = 10
         # Set channel parameters.
         channel.set_snr(step)
         for _ in range(0, rounds):
@@ -77,7 +78,7 @@ def main():
             tx_frames = transceiver.training_symbols_to_frames(symbols)
             channel.create_channel_matrix()
             for tx_frame in tx_frames:
-                rx_frame = channel.apply_channel_without_awgn(tx_frame)
+                rx_frame = channel.apply_channel(tx_frame)
                 # Detect with predefined channel estimation.
                 #detected_frame = detector.detect(k,
                  #                                transceiver.get_symbol_list(),
@@ -143,28 +144,30 @@ def main():
             #for symbol in symbol_blocks:
             #    data_symbols.append(transceiver.sm_modulation(bits_to_index(symbol[0]), modulation.modulate(symbol[1])))
             #data_frames = transceiver.data_symbols_to_frames(data_symbols)
-            data_frame = transceiver.transmit_frame(k, zp_len)
-            rx_data_frame = channel.apply_channel_without_awgn(data_frame)
+            #data_frames = 1000
+            for _ in range(0, data_rounds):
+                data_frame = transceiver.transmit_frame(k, zp_len)
+                rx_data_frame = channel.apply_channel(data_frame)
 
-            # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            detected_data_frame = detector.detect(k,
-                                                  transceiver.get_symbol_list(),
-                                                  est_channel,
-                                                  rx_data_frame)
+                # Detect the sent frame using the M-algorithm based LSS-ML detector.
+                detected_data_frame = detector.detect(k,
+                                                      transceiver.get_symbol_list(),
+                                                      est_channel,
+                                                      rx_data_frame)
 
-            # Show the number of bit errors which occurred.
-            tx_frame = data_frame.flatten()
-            detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
-            for index in range(0, k * setup[0]):
-                if data_frame[index] != detected_data_frame[index]:
-                    count += 1
+                # Show the number of bit errors which occurred.
+                tx_frame = data_frame.flatten()
+                detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
+                for index in range(0, k * setup[0]):
+                    if data_frame[index] != detected_data_frame[index]:
+                        count += 1
 
         # BER calculation: Take combining gain into account, i.e. multiply by N_r.
-        ber = count / (k * setup[0] * rounds)
+        ber = count / (k * setup[0] * rounds * data_rounds)
         # Measure the passed time.
         diff = time.time() - start
         # Write result in console.
-        print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
+        print(str(count) + " bits in " + str(data_rounds) + " data frames in " + str(rounds) + " tests were wrong!\n"
               + "> BER = " + str(ber) + "\n"
               + "> In " + str(diff) + " seconds.")
         # Append result to the list.
