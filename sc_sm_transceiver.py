@@ -150,9 +150,22 @@ class Transceiver:
         # Reshape list to a numpy array in vector form (K * N_t, 1).
         return np.reshape(frame[: k * self.n_t], (k * self.n_t, 1))
 
-    def create_frames(self):
-        """ Create transmission frames. """
-        return
+    def rrc_filter(self, beta, span, sps, frame):
+        """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
+        T_s = 1
+        factor = 1 / np.sqrt(T_s)
+        # Length of the filter is the number of symbols  multiplied by the number of samples per symbol.
+        h_rrc = np.zeros(span * sps, dtype=float)
+        for index in range(0, span * sps):
+            t = (index - span * sps / 2) * T_s
+            if t == 0:
+                h_rrc[index] = factor * (1 - beta + (4 * beta / np.pi))
+            elif beta != 0 and np.absolute(t) == T_s / 4 / beta:
+                h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
+            else:
+                h_rrc[index] = factor * ((np.sin(np.pi * t / T_s * (1 - beta)) + 4 * beta * t / T_s * np.cos(np.pi * t / T_s * (1 + beta))) /
+                                         (np.pi * t / T_s * (1 - (4 * beta * t / T_s)**2)))
+        return np.convolve(h_rrc, frame)
 
     def remove_zero_pad(self, frame, prefix_len):
         """ Remove the padding of a frame, i.e. a list of symbols. """
@@ -336,6 +349,19 @@ class ChannelEstimator:
         for sub_list in seq:
             seq_list.append(list(np.where(sub_list, 1, 0)))
         return seq_list
+
+    def generate_zadoffchu_sequence(self, root_index, sequence_length):
+        """ Function to create a Zadoff-Chu sequence of a given root index and size. """
+        return np.exp((-1j * np.pi * root_index * np.arange(sequence_length) * (np.arange(sequence_length) + 1)) / sequence_length)
+
+    def create_flc_frame(self, sequence):
+        """ Function to create a transmission frame used for the Fixed-Lag-Correlation. """
+        return np.concatenate((sequence, sequence))
+
+    def create_flc_prime(self, sequence):
+        """ Function to create a frame used by the Fixed-Lag-Correlation at the receiver. """
+        # Sequence should be a one-dimensional Numpy array.
+        return np.roll(sequence, int(np.ceil(sequence.size / 2)))
 
     def extract_channel(self, correlated_channel_responses):
         """ Function to estimate a channel based on a correlation representing a channel response. """

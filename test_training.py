@@ -9,8 +9,8 @@
 
 """ Test of the implementation of the Single Carrier Spatial Modulation scheme. """
 
-import numpy as np
 import time
+import numpy as np
 import matplotlib.pyplot as plt
 from modulation import BPSK as bpsk
 #from channel import MIMOChannel as h
