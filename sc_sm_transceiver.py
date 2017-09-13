@@ -150,6 +150,11 @@ class Transceiver:
         # Reshape list to a numpy array in vector form (K * N_t, 1).
         return np.reshape(frame[: k * self.n_t], (k * self.n_t, 1))
 
+    def upsampling(self, rate, frame):
+        """ Upsample a given frame with a given upsampling rate. """
+        # Frame should be a (x, 1) Numpy array.
+        return frame.repeat(rate, axis=0)
+
     def rrc_filter(self, beta, span, sps, frame):
         """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
         T_s = 1
