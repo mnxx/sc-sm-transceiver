@@ -59,6 +59,13 @@ class MIMOChannel:
                 + 1j * np.random.normal(0, np.sqrt(10**(-self.snr / 10) / 2),
                                         ((self.frame_len + self.multipaths - 1) * self.n_r, 1)))
 
+    def add_awgn(self, vector_len):
+        """ Create an AWGN Vector of a given size. """
+        return (np.random.normal(0, np.sqrt(10**(-self.snr / 10) / 2),
+                                 vector_len)
+                + 1j * np.random.normal(0, np.sqrt(10**(-self.snr / 10) / 2),
+                                        vector_len))
+
     def apply_channel(self, signal_vector):
         """ Directly apply the effects of the frequency selective channel on a signal vector. """
         return (self.channel_matrix).dot(signal_vector) + self.create_awgn_vector()

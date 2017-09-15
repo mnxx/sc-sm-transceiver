@@ -103,30 +103,33 @@ def main():
             print(pulse.shape)
 
             # FOR NOW: USE SISO CHANNEL MODEL
-            h_s = np.zeros(15, dtype=complex)
+            h_s = np.zeros(100, dtype=complex)
             h_s[0] = 1
-            h_s[int(sps/2)] = -2
-            h_s[1*sps+1] = 1j
-            h_s[2*sps+1] = .7+.7j
-            h_s[3*sps+1] = -2-2j
+            h_s[3] = 1
+            h_s[19] = 0.5
+            h_s[99] = 0.2 + 0.2j
+            #h_s[int(sps/2)] = -2
+            #h_s[1*sps+1] = 1j
+            #h_s[2*sps+1] = .7+.7j
+            #h_s[3*sps+1] = -2-2j
 
             plt.figure()
             plt.subplot(211)
             plt.title('Pulse shaped Zadoff-Chu sequence.')
             plt.plot(pulse)
             plt.subplot(212)
-            plt.title('Pulse shaped C\'.')
-            #plt.plot(c_prime)
-            plt.plot(tx_frame)
+            plt.title('Upsampled C\'.')
+            plt.plot(c_prime)
+            #plt.plot(tx_frame)
             #plt.show()
 
             #rx_frame = channel.apply_channel(pulse)
             rx_frame = np.convolve(pulse, h_s)
+            #rx_frame = np.reshape(rx_frame, (rx_frame.size, 1))
             print(rx_frame.shape)
-            rn = rx_frame + (np.random.normal(0, np.sqrt(10**(-snr / 10) / 2),
-                                              4141)
-                + 1j * np.random.normal(0, np.sqrt(10**(-snr / 10) / 2),
-                                        4141))
+            #print(channel.add_awgn(4141).shape)
+            # Shape needed for correlation is (size,).
+            rn = rx_frame + channel.add_awgn(4226)
             print(rn.shape)
             y = transceiver.rrc_filter(1, 8, 4, rn)
 
@@ -150,10 +153,10 @@ def main():
 
             plt.figure()
             plt.title('Poly-Crosscorrelation.')
-            plt.plot(yycorr[0], 'k-<')
-            plt.plot(yycorr[1], 'b-<')
-            plt.plot(yycorr[2], 'g-<')
-            plt.plot(yycorr[3], 'r-<')
+            plt.plot(yycorr[0][515 : 530], 'k-<')
+            plt.plot(yycorr[1][515 : 530], 'b-<')
+            plt.plot(yycorr[2][515 : 530], 'g-<')
+            plt.plot(yycorr[3][515 : 530], 'r-<')
             plt.show()
             sum_energy = []
             for _ in range(0, sps):
