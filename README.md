@@ -2,16 +2,19 @@
 
 ## To Do
 
-### Next 7 days.
+### General Purpose
 
 - write down additional papers
 - improve current code design
-- generalize channel estimation
-- implement synchronization: whole frame / schmidl-cox approach
+- generalize & test for QPSK
 
-### Before Monday.
+### Before Monday
 
-- implement channel estimation: generate gold sequences
-- determine length sequence length w/ CE function
-- implement channel estimation: create training frame
-- implement channel estimation: correlate frame for CIR
+- send real data and analyze results
+- normalize values in channel estimation
+- synchronize frequency offset
+
+### Before Wednesday
+
+- analyze performance of scheme
+- add frequency offset and observe correlation
