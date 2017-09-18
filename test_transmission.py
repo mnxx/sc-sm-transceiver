@@ -91,7 +91,7 @@ def main():
         start = time.time()
         count = 0
         channel.set_snr(step)
-        channel.create_channel_matrix()
+        channel.create_rx_channel_matrix(4127)
         sps = 4
         for _ in range(0, rounds):
             c = channel_estimator.generate_zadoffchu_sequence(1, 512)
@@ -103,11 +103,11 @@ def main():
             print(pulse.shape)
 
             # FOR NOW: USE SISO CHANNEL MODEL
-            h_s = np.zeros(100, dtype=complex)
-            h_s[0] = 1
-            h_s[3] = 1
-            h_s[19] = 0.5
-            h_s[99] = 0.2 + 0.2j
+            #h_s = np.zeros(100, dtype=complex)
+            #h_s[0] = 1
+            #h_s[3] = 1
+            #h_s[19] = 0.5
+            #h_s[99] = 0.2 + 0.2j
             #h_s[int(sps/2)] = -2
             #h_s[1*sps+1] = 1j
             #h_s[2*sps+1] = .7+.7j
@@ -123,18 +123,24 @@ def main():
             #plt.plot(tx_frame)
             #plt.show()
 
-            #rx_frame = channel.apply_channel(pulse)
-            rx_frame = np.convolve(pulse, h_s)
+            rx_frame = channel.apply_rx_channel_without_awgn(pulse)
+            #rx_frame = np.convolve(pulse, h_s)
             #rx_frame = np.reshape(rx_frame, (rx_frame.size, 1))
             print(rx_frame.shape)
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
-            rn = rx_frame + channel.add_awgn(4226)
+            rn = rx_frame + channel.add_awgn(8258)
             print(rn.shape)
+            rn_split = np.reshape(rn, (setup[1], 8258 / setup[1]), 'F')
+            y_split1 = transceiver.rrc_filter(1, 8, 4, rn_split[0])
+            y_split2 = transceiver.rrc_filter(1, 8, 4, rn_split[1])
             y = transceiver.rrc_filter(1, 8, 4, rn)
 
+            ycorr1 = np.correlate(y_split1, c_prime, mode='same').real
+            ycorr2 = np.correlate(y_split2, c_prime, mode='same').real
             rcorr = np.correlate(rn, c_prime, mode='same').real
             ycorr = np.correlate(y, c_prime, mode='same').real
+
 
             plt.figure()
             plt.subplot(211)
@@ -146,17 +152,40 @@ def main():
             plt.plot(ycorr)
             #plt.show()
 
+            plt.figure()
+            plt.subplot(211)
+            plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
+            plt.plot(ycorr1)
+            plt.subplot(212)
+            plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
+            #plt.plot(c_prime)
+            plt.plot(ycorr2)
+
             # Downsampling & poly-phase correlation.
             yycorr = ycorr[: ycorr.size - np.mod(ycorr.size, sps)]
-            yycorr = np.reshape(yycorr, (sps, int(yycorr.size / 4)), 'F')
-            print(yycorr.shape)
+            #yycorr = np.reshape(yycorr, (sps, int(yycorr.size / sps)), 'F')
+            pycorr = np.zeros((sps, int(yycorr.size / sps)))
+            for index, value in enumerate(yycorr):
+                place = np.mod(index, sps)
+                pycorr[place][int(index / 4)] = value
+            print(pycorr.shape)
+
+            yycorr1 = ycorr1[: ycorr1.size - np.mod(ycorr1.size, sps)]
+            yycorr1 = np.reshape(yycorr1, (sps, int(yycorr1.size / sps)), 'F')
 
             plt.figure()
             plt.title('Poly-Crosscorrelation.')
-            plt.plot(yycorr[0][515 : 530], 'k-<')
-            plt.plot(yycorr[1][515 : 530], 'b-<')
-            plt.plot(yycorr[2][515 : 530], 'g-<')
-            plt.plot(yycorr[3][515 : 530], 'r-<')
+            plt.plot(yycorr1[0][ : 1080], 'k-<')
+            plt.plot(yycorr1[1][ : 1080], 'b-<')
+            plt.plot(yycorr1[2][ : 1080], 'g-<')
+            plt.plot(yycorr1[3][ : 1080], 'r-<')
+
+            plt.figure()
+            plt.title('Poly-Crosscorrelation.')
+            plt.plot(pycorr[0][999 : 1080], 'k-<')
+            plt.plot(pycorr[1][999 : 1080], 'b-<')
+            plt.plot(pycorr[2][999 : 1080], 'g-<')
+            plt.plot(pycorr[3][999 : 1080], 'r-<')
             plt.show()
             sum_energy = []
             for _ in range(0, sps):
