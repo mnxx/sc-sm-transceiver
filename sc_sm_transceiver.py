@@ -148,7 +148,7 @@ class Transceiver:
         """ Concatenation Function: Create a transmission frame, add a Zero-Pad. """
         frame = self.add_zero_pad(self.create_transmission_frame(k), prefix_len)
         # Reshape list to a numpy array in vector form (K * N_t, 1).
-        return np.reshape(frame[: k * self.n_t], (k * self.n_t, 1))
+        return np.reshape(frame[: k * self.n_t], (k * self.n_t))
 
     def upsampling(self, rate, frame):
         """ Upsample a given frame with a given upsampling rate. """
@@ -410,4 +410,42 @@ class ChannelEstimator:
         # Flatten the 4-dimensional matrix.
         channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
         #print(nb_multipaths)
+        return channel_matrix
+
+    def extract_channel_response(self, channel_responses, response_to_use):
+        """ Extract the channel impulse response vector corresponding to a transmit antenna. """
+        #n_r = channel_responses.shape[0]
+        # Extract actual multi-paths for each reception antenna.
+        multipaths = []
+        counter = []
+        for ra in range(0, self.n_r):
+            antenna_response = channel_responses[ra][response_to_use]
+            multipaths.append([])
+            counter.append(0)
+            best_path = max(antenna_response)
+            threshold = 0.2 * best_path
+            for val in antenna_response:
+                if val > threshold:
+                    multipaths[ra].append(val / best_path)
+                    counter[ra] += 1
+        nb_multipaths = max(counter)
+        #print(multipaths[0][: 10])
+        # Vectors have to be of size ((K + P - 1) * N_r,).
+        channel_vector = np.zeros((self.n_r * (self.frame_len + nb_multipaths - 1)), dtype=complex)
+        for ra in range(0, self.n_r):
+            for index, val in enumerate(multipaths[ra]):
+                channel_vector[index * self.n_r + ra] = val
+        #print(channel_vector[0 : 10])
+        return channel_vector
+
+    def recreate_channel(self, correlated_channel_responses):
+        """ Function to estimate a channel based on a correlation representing a channel response. """
+        channel_matrix = np.zeros((correlated_channel_responses[0].size, self.frame_len * len(correlated_channel_responses)), dtype=complex)
+        # Fill first column of Block-Toeplitz-Matrix.
+        for index, column in enumerate(correlated_channel_responses):
+            channel_matrix[:, index] = column
+        # Fill the following columns with a rotation of the first.
+        for symbol in range(1, self.frame_len):
+            for index, column in enumerate(correlated_channel_responses):
+                channel_matrix[:, len(correlated_channel_responses) * symbol + index] = np.roll(column, self.n_r)
         return channel_matrix

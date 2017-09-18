@@ -170,11 +170,11 @@ class HardCodedChannel(MIMOChannel):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
         self.sub_matrices[0] = np.array([[1.0],
-                                         [1.0]])
-        self.sub_matrices[1] = np.array([[0.3],
-                                         [0.3]])
+                                         [0.5]])
+        self.sub_matrices[1] = np.array([[0.7],
+                                         [0.5]])
         self.sub_matrices[2] = np.array([[0.3],
-                                         [0.3]])
+                                         [0.5]])
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, 1),
                                        dtype=self.sub_matrices[2].dtype)
@@ -183,7 +183,6 @@ class HardCodedChannel(MIMOChannel):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns)
-        print(self.channel_matrix.shape)
 
     def apply_rx_channel_without_awgn(self, signal_vector):
         """ Directly apply the frequency selective channel without AWGN on a signal vector. """

@@ -81,7 +81,7 @@ def main():
     channel_estimator = ce(setup, k)
 
     # LOOP FOR TESTING PURPOSES.
-    rounds = 1
+    rounds = 100
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
     steps = [10]
@@ -91,16 +91,17 @@ def main():
         start = time.time()
         count = 0
         channel.set_snr(step)
-        channel.create_rx_channel_matrix(4127)
-        sps = 4
-        for _ in range(0, rounds):
-            c = channel_estimator.generate_zadoffchu_sequence(1, 512)
+        # TRAINING FOR EACH TRANSMIT ANTENNA.
+        channel_response_list = []
+        for ta in range(0, setup[0]):
+            # TRAINING TRANSMISSIONS:
+            sps = 4
+            span = 8
+            c = channel_estimator.generate_zadoffchu_sequence(1, int(k / 2))
             tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
-            #print(tx_frame.shape)
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
-            #print(c_prime.shape)
-            pulse = transceiver.rrc_filter(1, 8, 4, tx_frame)
-            print(pulse.shape)
+            pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
+            channel.create_rx_channel_matrix(sps * k + (sps * span) - 1)
 
             # FOR NOW: USE SISO CHANNEL MODEL
             #h_s = np.zeros(100, dtype=complex)
@@ -113,97 +114,122 @@ def main():
             #h_s[2*sps+1] = .7+.7j
             #h_s[3*sps+1] = -2-2j
 
-            plt.figure()
-            plt.subplot(211)
-            plt.title('Pulse shaped Zadoff-Chu sequence.')
-            plt.plot(pulse)
-            plt.subplot(212)
-            plt.title('Upsampled C\'.')
-            plt.plot(c_prime)
+            #plt.figure()
+            #plt.subplot(211)
+            #plt.title('Pulse shaped Zadoff-Chu sequence.')
+            #plt.plot(pulse)
+            #plt.subplot(212)
+            #plt.title('Upsampled C\'.')
+            #plt.plot(c_prime)
             #plt.plot(tx_frame)
             #plt.show()
 
             rx_frame = channel.apply_rx_channel_without_awgn(pulse)
+            rn = rx_frame + channel.add_awgn(rx_frame.size)
+
             #rx_frame = np.convolve(pulse, h_s)
             #rx_frame = np.reshape(rx_frame, (rx_frame.size, 1))
-            print(rx_frame.shape)
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
-            rn = rx_frame + channel.add_awgn(8258)
-            print(rn.shape)
-            rn_split = np.reshape(rn, (setup[1], 8258 / setup[1]), 'F')
-            y_split1 = transceiver.rrc_filter(1, 8, 4, rn_split[0])
-            y_split2 = transceiver.rrc_filter(1, 8, 4, rn_split[1])
-            y = transceiver.rrc_filter(1, 8, 4, rn)
+            #print(rn.shape)
 
-            ycorr1 = np.correlate(y_split1, c_prime, mode='same').real
-            ycorr2 = np.correlate(y_split2, c_prime, mode='same').real
-            rcorr = np.correlate(rn, c_prime, mode='same').real
-            ycorr = np.correlate(y, c_prime, mode='same').real
+            rn_split = np.reshape(rn, (setup[1], rx_frame.size / setup[1]), 'F')
+            # Splitting for each reception antenna.
+            y = []
+            for ra in range(0, setup[1]):
+                y.append(transceiver.rrc_filter(1, span, sps, rn_split[ra]))
+                #y = transceiver.rrc_filter(1, 8, 4, rn)
+
+                y[ra] = np.correlate(y[ra], c_prime, mode='same')
+
+                #rcorr = np.correlate(rn, c_prime, mode='same').real
+                #ycorr = np.correlate(y, c_prime, mode='same').real
 
 
-            plt.figure()
-            plt.subplot(211)
-            plt.title('Crosscorrelation: rx before filtering.')
-            plt.plot(rcorr)
-            plt.subplot(212)
-            plt.title('Crosscorrelation: rx after filtering.')
-            #plt.plot(c_prime)
-            plt.plot(ycorr)
+                #plt.figure()
+                #plt.subplot(211)
+                #plt.title('Crosscorrelation: rx before filtering.')
+                #plt.plot(rcorr)
+                #plt.subplot(212)
+                #plt.title('Crosscorrelation: rx after filtering.')
+                #plt.plot(c_prime)
+                #plt.plot(ycorr)
+                #plt.show()
+
+                #plt.figure()
+                #plt.subplot(211)
+                #plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
+                #plt.plot(ycorr1)
+                #plt.subplot(212)
+                #plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
+                #plt.plot(c_prime)
+                #plt.plot(ycorr2)
+
+                # Downsampling & poly-phase correlation.
+                #yycorr = ycorr[: ycorr.size - np.mod(ycorr.size, sps)]
+                #yycorr = np.reshape(yycorr, (sps, int(yycorr.size / sps)), 'F')
+                #pycorr = np.zeros((sps, int(yycorr.size / sps)))
+                #for index, value in enumerate(yycorr):
+                #    place = np.mod(index, sps)
+                #    pycorr[place][int(index / 4)] = value
+                #print(pycorr.shape)
+
+                y[ra] = y[ra][: y[ra].size - np.mod(y[ra].size, sps)]
+                y[ra] = np.reshape(y[ra], (sps, int(y[ra].size / sps)), 'F')
+
+                plt.figure()
+                plt.title('Polyphase-cross-correlation [0].')
+                start = int(k / 2)
+                stop = int(k / 2) + sps * p
+                plt.plot(y[ra][0][start : stop], 'k-<')
+                plt.plot(y[ra][1][start : stop], 'b-<')
+                plt.plot(y[ra][2][start : stop], 'g-<')
+                plt.plot(y[ra][3][start : stop], 'r-<')
+
+            #plt.figure()
+            #plt.title('Poly-Crosscorrelation.')
+            #plt.plot(pycorr[0][999 : 1080], 'k-<')
+            #plt.plot(pycorr[1][999 : 1080], 'b-<')
+            #plt.plot(pycorr[2][999 : 1080], 'g-<')
+            #plt.plot(pycorr[3][999 : 1080], 'r-<')
+
             #plt.show()
 
-            plt.figure()
-            plt.subplot(211)
-            plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
-            plt.plot(ycorr1)
-            plt.subplot(212)
-            plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
-            #plt.plot(c_prime)
-            plt.plot(ycorr2)
-
-            # Downsampling & poly-phase correlation.
-            yycorr = ycorr[: ycorr.size - np.mod(ycorr.size, sps)]
-            #yycorr = np.reshape(yycorr, (sps, int(yycorr.size / sps)), 'F')
-            pycorr = np.zeros((sps, int(yycorr.size / sps)))
-            for index, value in enumerate(yycorr):
-                place = np.mod(index, sps)
-                pycorr[place][int(index / 4)] = value
-            print(pycorr.shape)
-
-            yycorr1 = ycorr1[: ycorr1.size - np.mod(ycorr1.size, sps)]
-            yycorr1 = np.reshape(yycorr1, (sps, int(yycorr1.size / sps)), 'F')
-
-            plt.figure()
-            plt.title('Poly-Crosscorrelation.')
-            plt.plot(yycorr1[0][ : 1080], 'k-<')
-            plt.plot(yycorr1[1][ : 1080], 'b-<')
-            plt.plot(yycorr1[2][ : 1080], 'g-<')
-            plt.plot(yycorr1[3][ : 1080], 'r-<')
-
-            plt.figure()
-            plt.title('Poly-Crosscorrelation.')
-            plt.plot(pycorr[0][999 : 1080], 'k-<')
-            plt.plot(pycorr[1][999 : 1080], 'b-<')
-            plt.plot(pycorr[2][999 : 1080], 'g-<')
-            plt.plot(pycorr[3][999 : 1080], 'r-<')
-            plt.show()
             sum_energy = []
+            # Find sample moment with the maximum energy.
             for _ in range(0, sps):
-                sum_energy.append(np.sum(np.absolute(yycorr[_][515 : 530])**2))
-            print(sum_energy)
-            break
+                sum_energy.append((np.sum(np.absolute(y[0][_][515 : 525])**2), _))
+            samples_to_use = max(sum_energy)[1]
+            # Extract a channel impulse response vector.
+            channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use))
+        # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
+        # Channel matrix is 'deformed' because it includes the filters' impulse responses.
+        estimated_channel = channel_estimator.recreate_channel(channel_response_list)
+
+        # START TRANSMITTING DATA USING THE ESTIMATED CHANNEL.
+        sps = 4
+        span = 8
+        for _ in range(0, rounds):
+            # Send random data for now.
+            data_frame = transceiver.transmit_frame(k, zp_len)
+            print(data_frame.shape)
+            tx_frame = transceiver.upsampling(sps, data_frame)
+            pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
+            # Apply the channel on the pulse.
+            # PULSE IS 2 TIMES TOO LARGE: WE HAVE 2 BITS PER SYMBOL IN THIS SIMULATION!
+            rx_frame = channel.apply_rx_channel_without_awgn(pulse)
+            rn = rx_frame + channel.add_awgn(rx_frame.size)
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            detected_frame = detector.detect(k,
-                                             transceiver.get_symbol_list(),
-                                             channel.get_channel_matrix(),
-                                             #channel.get_ce_error_matrix(10),
-                                             rx_frame)
+            detected_data_frame = detector.detect(k,
+                                                  transceiver.get_symbol_list(),
+                                                  estimated_channel,
+                                                  rn)
 
             # Show the number of bit errors which occurred.
-            tx_frame = tx_frame.flatten()
-            detected_frame = [symbol for sm_symbol in detected_frame for symbol in sm_symbol]
+            tx_frame = data_frame.flatten()
+            detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
             for index in range(0, k * setup[0]):
-                if tx_frame[index] != detected_frame[index]:
+                if tx_frame[index] != detected_data_frame[index]:
                     count += 1
 
         # BER calculation: Take combining gain into account, i.e. multiply by N_r.
