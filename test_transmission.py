@@ -54,6 +54,7 @@ def main():
     setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
     k = 1024
+    k_data = k
     # Number of multipath links.
     p = 3
     # Length of the Zero-Prefix.
@@ -81,10 +82,10 @@ def main():
     channel_estimator = ce(setup, k)
 
     # LOOP FOR TESTING PURPOSES.
-    rounds = 100
+    rounds = 10
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [10]
+    steps = [20]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -93,6 +94,7 @@ def main():
         channel.set_snr(step)
         # TRAINING FOR EACH TRANSMIT ANTENNA.
         channel_response_list = []
+        samples_to_use = 0
         for ta in range(0, setup[0]):
             # TRAINING TRANSMISSIONS:
             sps = 4
@@ -101,7 +103,7 @@ def main():
             tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
-            channel.create_rx_channel_matrix(sps * k + (sps * span) - 1)
+            channel.create_ta_channel_matrix(sps * k + (sps * span) - 1, ta)
 
             # FOR NOW: USE SISO CHANNEL MODEL
             #h_s = np.zeros(100, dtype=complex)
@@ -124,7 +126,7 @@ def main():
             #plt.plot(tx_frame)
             #plt.show()
 
-            rx_frame = channel.apply_rx_channel_without_awgn(pulse)
+            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
             rn = rx_frame + channel.add_awgn(rx_frame.size)
 
             #rx_frame = np.convolve(pulse, h_s)
@@ -133,7 +135,7 @@ def main():
             # Shape needed for correlation is (size,).
             #print(rn.shape)
 
-            rn_split = np.reshape(rn, (setup[1], rx_frame.size / setup[1]), 'F')
+            rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
             # Splitting for each reception antenna.
             y = []
             for ra in range(0, setup[1]):
@@ -178,13 +180,13 @@ def main():
                 y[ra] = np.reshape(y[ra], (sps, int(y[ra].size / sps)), 'F')
 
                 plt.figure()
-                plt.title('Polyphase-cross-correlation [0].')
+                plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
                 start = int(k / 2)
                 stop = int(k / 2) + sps * p
-                plt.plot(y[ra][0][start : stop], 'k-<')
-                plt.plot(y[ra][1][start : stop], 'b-<')
-                plt.plot(y[ra][2][start : stop], 'g-<')
-                plt.plot(y[ra][3][start : stop], 'r-<')
+                plt.plot(y[ra][0][start : stop].real, 'k-<')
+                plt.plot(y[ra][1][start : stop].real, 'b-<')
+                plt.plot(y[ra][2][start : stop].real, 'g-<')
+                plt.plot(y[ra][3][start : stop].real, 'r-<')
 
             #plt.figure()
             #plt.title('Poly-Crosscorrelation.')
@@ -193,34 +195,41 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            #plt.show()
+            plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
             for _ in range(0, sps):
-                sum_energy.append((np.sum(np.absolute(y[0][_][515 : 525])**2), _))
+                sum_energy.append((np.sum(np.absolute(y[0][_][int(k / 2) : int(k / 2) + sps * p])**2), _))
             samples_to_use = max(sum_energy)[1]
+            #print(samples_to_use)
             # Extract a channel impulse response vector.
-            channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use))
+            strongest_path = max([channel_response.max() for channel_response in y])
+            #print(strongest_path)
+            channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use, strongest_path))
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-
+        #print(estimated_channel[: 8, : 2])
+        # Recreate the channel matrix influencing the transmission.
+        channel.create_channel_matrix_from_ta_vectors()
         # START TRANSMITTING DATA USING THE ESTIMATED CHANNEL.
         sps = 4
         span = 8
+        #transceiver.set_symbols_per_frame(k_data)
         for _ in range(0, rounds):
             # Send random data for now.
-            data_frame = transceiver.transmit_frame(k, zp_len)
-            print(data_frame.shape)
+            data_frame = transceiver.transmit_frame(k_data, zp_len)
+            #print(data_frame.shape)
             tx_frame = transceiver.upsampling(sps, data_frame)
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             # Apply the channel on the pulse.
             # PULSE IS 2 TIMES TOO LARGE: WE HAVE 2 BITS PER SYMBOL IN THIS SIMULATION!
-            rx_frame = channel.apply_rx_channel_without_awgn(pulse)
+            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
             rn = rx_frame + channel.add_awgn(rx_frame.size)
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            detected_data_frame = detector.detect(k,
+            rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
+            detected_data_frame = detector.detect(k_data,
                                                   transceiver.get_symbol_list(),
                                                   estimated_channel,
                                                   rn)
@@ -228,7 +237,7 @@ def main():
             # Show the number of bit errors which occurred.
             tx_frame = data_frame.flatten()
             detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
-            for index in range(0, k * setup[0]):
+            for index in range(0, k_data * setup[0]):
                 if tx_frame[index] != detected_data_frame[index]:
                     count += 1
 

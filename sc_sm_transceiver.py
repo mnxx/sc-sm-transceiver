@@ -59,6 +59,10 @@ class Transceiver:
         """ Return a list of the possible SM symbols. """
         return self.possible_symbols
 
+    def set_symbols_per_frame(self, symbols_per_frame):
+        """ Set the number of symbols per frame. """
+        self.k = symbols_per_frame
+
     def bits_to_index(self, bits):
         """ Return the decimal value of a series of bits. """
         return
@@ -157,7 +161,7 @@ class Transceiver:
 
     def rrc_filter(self, beta, span, sps, frame):
         """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
-        T_s = 1
+        T_s = 1 / 5e6
         factor = 1 / np.sqrt(T_s)
         # Length of the filter is the number of symbols  multiplied by the number of samples per symbol.
         h_rrc = np.zeros(span * sps, dtype=float)
@@ -412,7 +416,7 @@ class ChannelEstimator:
         #print(nb_multipaths)
         return channel_matrix
 
-    def extract_channel_response(self, channel_responses, response_to_use):
+    def extract_channel_response(self, channel_responses, response_to_use, strongest_path):
         """ Extract the channel impulse response vector corresponding to a transmit antenna. """
         #n_r = channel_responses.shape[0]
         # Extract actual multi-paths for each reception antenna.
@@ -422,11 +426,11 @@ class ChannelEstimator:
             antenna_response = channel_responses[ra][response_to_use]
             multipaths.append([])
             counter.append(0)
-            best_path = max(antenna_response)
-            threshold = 0.2 * best_path
+            #best_path = max(antenna_response)
+            threshold = 0.2 * strongest_path
             for val in antenna_response:
                 if val > threshold:
-                    multipaths[ra].append(val / best_path)
+                    multipaths[ra].append(val / strongest_path)
                     counter[ra] += 1
         nb_multipaths = max(counter)
         #print(multipaths[0][: 10])
@@ -435,7 +439,6 @@ class ChannelEstimator:
         for ra in range(0, self.n_r):
             for index, val in enumerate(multipaths[ra]):
                 channel_vector[index * self.n_r + ra] = val
-        #print(channel_vector[0 : 10])
         return channel_vector
 
     def recreate_channel(self, correlated_channel_responses):
