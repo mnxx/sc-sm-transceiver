@@ -174,7 +174,7 @@ class Transceiver:
             else:
                 h_rrc[index] = factor * ((np.sin(np.pi * t / T_s * (1 - beta)) + 4 * beta * t / T_s * np.cos(np.pi * t / T_s * (1 + beta))) /
                                          (np.pi * t / T_s * (1 - (4 * beta * t / T_s)**2)))
-        return np.convolve(h_rrc, frame)
+        return np.convolve(h_rrc, frame, 'same')
 
     def remove_zero_pad(self, frame, prefix_len):
         """ Remove the padding of a frame, i.e. a list of symbols. """
@@ -420,6 +420,7 @@ class ChannelEstimator:
         """ Extract the channel impulse response vector corresponding to a transmit antenna. """
         #n_r = channel_responses.shape[0]
         # Extract actual multi-paths for each reception antenna.
+        # Create list of lists of lists indicating the value and position of the multi-path.
         multipaths = []
         counter = []
         for ra in range(0, self.n_r):
@@ -427,25 +428,36 @@ class ChannelEstimator:
             multipaths.append([])
             counter.append(0)
             #best_path = max(antenna_response)
-            threshold = 0.2 * strongest_path
-            for val in antenna_response:
+            threshold = 0.1 * strongest_path
+            for index, val in enumerate(antenna_response):
                 if val > threshold:
-                    multipaths[ra].append(val / strongest_path)
+                    multipaths[ra].append([val / strongest_path, index])
                     counter[ra] += 1
+            fastest_path = multipaths[ra][0][1]
+            for path in multipaths[ra]:
+                path[1] = path[1] - fastest_path
+                print(path[1])
         nb_multipaths = max(counter)
+        #print(nb_multipaths)
         #print(multipaths[0][: 10])
         # Vectors have to be of size ((K + P - 1) * N_r,).
         channel_vector = np.zeros((self.n_r * (self.frame_len + nb_multipaths - 1)), dtype=complex)
         for ra in range(0, self.n_r):
             for index, val in enumerate(multipaths[ra]):
-                channel_vector[index * self.n_r + ra] = val
+                channel_vector[index * self.n_r + ra] = val[0]
         return channel_vector
 
     def recreate_channel(self, correlated_channel_responses):
         """ Function to estimate a channel based on a correlation representing a channel response. """
-        channel_matrix = np.zeros((correlated_channel_responses[0].size, self.frame_len * len(correlated_channel_responses)), dtype=complex)
+        # Different reception antennas can have a different amount of multi-paths.
+        max_multipaths = max([response.size for response in correlated_channel_responses])
+        for index, response in enumerate(correlated_channel_responses):
+            while correlated_channel_responses[index].size < max_multipaths:
+                correlated_channel_responses[index] = np.concatenate((correlated_channel_responses[index], np.zeros(1)))
+        channel_matrix = np.zeros((max_multipaths, self.frame_len * len(correlated_channel_responses)), dtype=complex)
         # Fill first column of Block-Toeplitz-Matrix.
         for index, column in enumerate(correlated_channel_responses):
+            #print(column.size)
             channel_matrix[:, index] = column
         # Fill the following columns with a rotation of the first.
         for symbol in range(1, self.frame_len):

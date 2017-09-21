@@ -20,7 +20,7 @@ from sc_sm_transceiver import LSSDetector as det
 from sc_sm_transceiver import ChannelEstimator as ce
 
 
-def main(): 
+def main():
     """
     plt.figure()
     plt.subplot(2,2,1)
@@ -103,7 +103,8 @@ def main():
             tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
-            channel.create_ta_channel_matrix(sps * k + (sps * span) - 1, ta)
+            channel.create_ta_channel_matrix(sps * k, ta)
+            #channel.create_ta_channel_matrix(sps * k + (sps * span) - 1, ta)
 
             # FOR NOW: USE SISO CHANNEL MODEL
             #h_s = np.zeros(100, dtype=complex)
@@ -127,14 +128,15 @@ def main():
             #plt.show()
 
             rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+            #rx_frame = np.convolve(pulse, channel.get_ta_channel(ta), 'same')
             rn = rx_frame + channel.add_awgn(rx_frame.size)
 
             #rx_frame = np.convolve(pulse, h_s)
             #rx_frame = np.reshape(rx_frame, (rx_frame.size, 1))
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
-            #print(rn.shape)
 
+            #print(rn[0 : 10])
             rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
             # Splitting for each reception antenna.
             y = []
@@ -161,11 +163,11 @@ def main():
                 #plt.figure()
                 #plt.subplot(211)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
-                #plt.plot(ycorr1)
+                #plt.plot(y[0])
                 #plt.subplot(212)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
                 #plt.plot(c_prime)
-                #plt.plot(ycorr2)
+                #plt.plot(y[1])
 
                 # Downsampling & poly-phase correlation.
                 #yycorr = ycorr[: ycorr.size - np.mod(ycorr.size, sps)]
@@ -176,17 +178,18 @@ def main():
                 #    pycorr[place][int(index / 4)] = value
                 #print(pycorr.shape)
 
-                y[ra] = y[ra][: y[ra].size - np.mod(y[ra].size, sps)]
+                y[ra] = y[ra][2000 : 2100]
+                #y[ra] = y[ra][: y[ra].size - np.mod(y[ra].size, sps)]
                 y[ra] = np.reshape(y[ra], (sps, int(y[ra].size / sps)), 'F')
 
                 plt.figure()
                 plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
-                start = int(k / 2)
-                stop = int(k / 2) + sps * p
-                plt.plot(y[ra][0][start : stop].real, 'k-<')
-                plt.plot(y[ra][1][start : stop].real, 'b-<')
-                plt.plot(y[ra][2][start : stop].real, 'g-<')
-                plt.plot(y[ra][3][start : stop].real, 'r-<')
+                #start = int(k / 2) - sps
+                #stop = int(k / 2) + sps
+                plt.plot(y[ra][0][:].real, 'k-<')
+                plt.plot(y[ra][1][:].real, 'b-<')
+                plt.plot(y[ra][2][:].real, 'g-<')
+                plt.plot(y[ra][3][:].real, 'r-<')
 
             #plt.figure()
             #plt.title('Poly-Crosscorrelation.')
@@ -200,9 +203,9 @@ def main():
             sum_energy = []
             # Find sample moment with the maximum energy.
             for _ in range(0, sps):
-                sum_energy.append((np.sum(np.absolute(y[0][_][int(k / 2) : int(k / 2) + sps * p])**2), _))
+                sum_energy.append((np.sum(np.absolute(y[0][_][:]**2)), _))
             samples_to_use = max(sum_energy)[1]
-            #print(samples_to_use)
+            print("SAMPLES TO USE: " + str(samples_to_use))
             # Extract a channel impulse response vector.
             strongest_path = max([channel_response.max() for channel_response in y])
             #print(strongest_path)
@@ -210,9 +213,11 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        #print(estimated_channel[: 8, : 2])
+        print(estimated_channel[: 8, : 2])
+        print(estimated_channel.shape)
+        exit()
         # Recreate the channel matrix influencing the transmission.
-        channel.create_channel_matrix_from_ta_vectors()
+        #channel.create_channel_matrix_from_ta_vectors(sps * k + ((sps * span) - 1) / setup[0])
         # START TRANSMITTING DATA USING THE ESTIMATED CHANNEL.
         sps = 4
         span = 8
@@ -221,18 +226,29 @@ def main():
             # Send random data for now.
             data_frame = transceiver.transmit_frame(k_data, zp_len)
             #print(data_frame.shape)
-            tx_frame = transceiver.upsampling(sps, data_frame)
-            pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
-            # Apply the channel on the pulse.
-            # PULSE IS 2 TIMES TOO LARGE: WE HAVE 2 BITS PER SYMBOL IN THIS SIMULATION!
-            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
-            rn = rx_frame + channel.add_awgn(rx_frame.size)
+            data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
+            rn_split = np.empty((setup[0], (sps * k + p - 1) * setup[1]), dtype=complex)
+            for ta in range(0, setup[0]):
+                tx_frame = transceiver.upsampling(sps, data_frame_split[ta])
+                pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
+                # Apply the channel on the pulse.
+                #print(pulse.shape)
+                channel.create_ta_channel_matrix(k * sps, ta)
+                rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+                #rx_frame = np.convolve(pulse, channel.get_ta_channel(ta), 'same')
+                #print(rx_frame.shape)
+                rn = rx_frame + channel.add_awgn(rx_frame.size)
+                #print(rx_frame.shape)
+                rn_split[ta] = rn
+            rx_data_frame = rn_split[:, samples_to_use]
+            for index in range(1, int(rn_split.shape[1] / sps)):
+                rx_data_frame = np.concatenate((rx_data_frame, rn_split[:, samples_to_use + index * sps]))
+            #print(rx_data_frame.shape)
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
             detected_data_frame = detector.detect(k_data,
                                                   transceiver.get_symbol_list(),
                                                   estimated_channel,
-                                                  rn)
+                                                  rx_data_frame)
 
             # Show the number of bit errors which occurred.
             tx_frame = data_frame.flatten()

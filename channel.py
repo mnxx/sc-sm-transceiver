@@ -174,14 +174,14 @@ class HardCodedChannel(MIMOChannel):
             self.sub_matrices[0] = np.array([[1.0],
                                              [0.5]])
             self.sub_matrices[1] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[2] = np.array([[0.3],
+                                             [0.4]])
+            self.sub_matrices[2] = np.array([[0.99],
                                              [0.3]])
         else:
             self.sub_matrices[0] = np.array([[0.5],
                                              [0.5]])
-            self.sub_matrices[1] = np.array([[0.0],
-                                             [0.0]])
+            self.sub_matrices[1] = np.array([[0.3],
+                                             [0.3]])
             self.sub_matrices[2] = np.array([[0.2],
                                              [0.4]])
         # Create 4-dimensional matrix using the sub-matrices.
@@ -192,6 +192,7 @@ class HardCodedChannel(MIMOChannel):
                 self.ta_channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.ta_channel_matrix.shape = (nb_rows * self.n_r, nb_columns)
+        #print(self.ta_channel_matrix[: 8, : 2])
         # Save the channel vector of the transmit antenna in the channel matrix.
         ta_channel_vector = np.vstack((self.sub_matrices.values()))
         if self.channel_matrix.size == 0:
@@ -205,14 +206,14 @@ class HardCodedChannel(MIMOChannel):
         """ Directly apply the frequency selective channel without AWGN on a signal vector. """
         return (self.ta_channel_matrix).dot(signal_vector)
 
-    def create_channel_matrix_from_ta_vectors(self):
+    def create_channel_matrix_from_ta_vectors(self, nb_col):
         """ Create the complete channel matrix from a given set of transmit antenna channel vectors. """
-        nb_rows = self.frame_len + self.multipaths - 1
-        nb_columns = self.frame_len
+        nb_rows = nb_col + self.multipaths - 1
+        nb_columns = nb_col
         for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             self.sub_matrices[_] = self.channel_matrix[_ * self.n_r : _ * self.n_r + self.n_r, :  self.n_t]
-            print(self.sub_matrices[_])
+            #print(self.sub_matrices[_])
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=self.sub_matrices[0].dtype)
@@ -221,3 +222,25 @@ class HardCodedChannel(MIMOChannel):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+
+    def apply_rx_channel_without_awgn(self, signal_vector):
+        """ Directly apply the frequency selective channel without AWGN on a signal vector. """
+        return (self.channel_matrix).dot(signal_vector)
+
+    def get_ta_channel(self, antenna):
+        """ Return the channel impulse response for a specific transmit antenna. """
+        if antenna == 0:
+            response = np.array([1.0,
+                                 0.5,
+                                 0.0,
+                                 0.0,
+                                 0.3,
+                                 0.3])
+        else:
+            response = np.array([0.5,
+                                 0.5,
+                                 0.0,
+                                 0.0,
+                                 0.2,
+                                 0.4])
+        return response
