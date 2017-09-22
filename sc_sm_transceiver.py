@@ -157,11 +157,15 @@ class Transceiver:
     def upsampling(self, rate, frame):
         """ Upsample a given frame with a given upsampling rate. """
         # Frame should be a (x, 1) Numpy array.
-        return frame.repeat(rate, axis=0)
+        upsampled_frame = np.zeros((rate * frame.size), dtype=complex)
+        for index, val in enumerate(frame):
+            upsampled_frame[rate * index] = val
+        return upsampled_frame
 
     def rrc_filter(self, beta, span, sps, frame):
         """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
-        T_s = 1 / 5e6
+        T_sample = 1.0
+        T_s = sps * T_sample
         factor = 1 / np.sqrt(T_s)
         # Length of the filter is the number of symbols  multiplied by the number of samples per symbol.
         h_rrc = np.zeros(span * sps, dtype=float)
@@ -174,7 +178,7 @@ class Transceiver:
             else:
                 h_rrc[index] = factor * ((np.sin(np.pi * t / T_s * (1 - beta)) + 4 * beta * t / T_s * np.cos(np.pi * t / T_s * (1 + beta))) /
                                          (np.pi * t / T_s * (1 - (4 * beta * t / T_s)**2)))
-        return np.convolve(h_rrc, frame, 'same')
+        return np.convolve(h_rrc / np.sqrt(np.sum(np.absolute(h_rrc)**2)), frame, 'same')
 
     def remove_zero_pad(self, frame, prefix_len):
         """ Remove the padding of a frame, i.e. a list of symbols. """
@@ -430,13 +434,14 @@ class ChannelEstimator:
             #best_path = max(antenna_response)
             threshold = 0.1 * strongest_path
             for index, val in enumerate(antenna_response):
-                if val > threshold:
+                abs_val = np.absolute(val)
+                if abs_val > threshold:
                     multipaths[ra].append([val / strongest_path, index])
                     counter[ra] += 1
             fastest_path = multipaths[ra][0][1]
             for path in multipaths[ra]:
                 path[1] = path[1] - fastest_path
-                print(path[1])
+                #print(path[1])
         nb_multipaths = max(counter)
         #print(nb_multipaths)
         #print(multipaths[0][: 10])
@@ -462,5 +467,5 @@ class ChannelEstimator:
         # Fill the following columns with a rotation of the first.
         for symbol in range(1, self.frame_len):
             for index, column in enumerate(correlated_channel_responses):
-                channel_matrix[:, len(correlated_channel_responses) * symbol + index] = np.roll(column, self.n_r)
+                channel_matrix[:, len(correlated_channel_responses) * symbol + index] = np.roll(column, self.n_r * symbol)
         return channel_matrix

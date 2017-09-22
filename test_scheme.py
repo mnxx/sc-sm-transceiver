@@ -70,6 +70,7 @@ def main():
             # Channel estimation: For now, perfect Channel State Information is assumed.
 
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
+            print(rx_frame[: 10])
             detected_frame = detector.detect(k,
                                              transceiver.get_symbol_list(),
                                              channel.get_channel_matrix(),

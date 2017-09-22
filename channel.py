@@ -172,21 +172,57 @@ class HardCodedChannel(MIMOChannel):
             # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
         if antenna == 0:
             self.sub_matrices[0] = np.array([[1.0],
-                                             [0.5]])
+                                             [0.6]])
             self.sub_matrices[1] = np.array([[0.0],
-                                             [0.4]])
-            self.sub_matrices[2] = np.array([[0.99],
-                                             [0.3]])
+                                             [0.0]])
+            self.sub_matrices[2] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[3] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[4] = np.array([[0.3 + 0.2j],
+                                             [0.4 + 0.2j]])
+            self.sub_matrices[5] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[6] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[7] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[8] = np.array([[0.2 + 0.1j],
+                                             [0.3 + 0.2j]])
+            self.sub_matrices[9] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[10] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[11] = np.array([[0.0],
+                                             [0.0]])
         else:
             self.sub_matrices[0] = np.array([[0.5],
                                              [0.5]])
-            self.sub_matrices[1] = np.array([[0.3],
-                                             [0.3]])
-            self.sub_matrices[2] = np.array([[0.2],
-                                             [0.4]])
+            self.sub_matrices[1] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[2] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[3] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[4] = np.array([[0.2j],
+                                             [0.5j]])
+            self.sub_matrices[5] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[6] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[7] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[8] = np.array([[0.15],
+                                             [0.25]])
+            self.sub_matrices[9] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[10] = np.array([[0.0],
+                                             [0.0]])
+            self.sub_matrices[11] = np.array([[0.0],
+                                             [0.0]])
         # Create 4-dimensional matrix using the sub-matrices.
         self.ta_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, 1),
-                                          dtype=self.sub_matrices[2].dtype)
+                                          dtype=complex)
         for index, sub_matrix in self.sub_matrices.items():
             for element in range(nb_columns):
                 self.ta_channel_matrix[index + element, :, element, :] = sub_matrix
