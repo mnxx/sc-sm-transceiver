@@ -163,31 +163,32 @@ class HardCodedChannel(MIMOChannel):
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
 
-    def create_ta_channel_matrix(self, nb_col, antenna):
+    def create_ta_channel_matrix(self, sps, antenna):
         """ Create a shortened Block-Toeplitz channel matrix for the training case. """
-        nb_rows = nb_col + self.multipaths - 1
-        nb_columns = nb_col
+        nb_rows = (self.frame_len + self.multipaths - 1) * sps
+        nb_columns = self.frame_len * sps
         #for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
+        s_sub_matrices = dict()
         if antenna == 0:
-            self.sub_matrices[0] = np.array([[1.0],
-                                             [0.6]])
+            s_sub_matrices[0] = np.array([[1.0],
+                                          [0.6]])
             self.sub_matrices[1] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[2] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[3] = np.array([[0.0],
                                              [0.0]])
-            self.sub_matrices[4] = np.array([[0.3 + 0.2j],
-                                             [0.4 + 0.2j]])
+            s_sub_matrices[1] = np.array([[0.3 + 0.2j],
+                                          [0.4 + 0.2j]])
             self.sub_matrices[5] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[6] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[7] = np.array([[0.0],
                                              [0.0]])
-            self.sub_matrices[8] = np.array([[0.2 + 0.1j],
+            s_sub_matrices[2] = np.array([[0.2 + 0.1j],
                                              [0.3 + 0.2j]])
             self.sub_matrices[9] = np.array([[0.0],
                                              [0.0]])
@@ -196,15 +197,15 @@ class HardCodedChannel(MIMOChannel):
             self.sub_matrices[11] = np.array([[0.0],
                                              [0.0]])
         else:
-            self.sub_matrices[0] = np.array([[0.5],
-                                             [0.5]])
+            s_sub_matrices[0] = np.array([[0.7],
+                                          [1.0]])
             self.sub_matrices[1] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[2] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[3] = np.array([[0.0],
                                              [0.0]])
-            self.sub_matrices[4] = np.array([[0.2j],
+            s_sub_matrices[1] = np.array([[0.2j],
                                              [0.5j]])
             self.sub_matrices[5] = np.array([[0.0],
                                              [0.0]])
@@ -212,8 +213,8 @@ class HardCodedChannel(MIMOChannel):
                                              [0.0]])
             self.sub_matrices[7] = np.array([[0.0],
                                              [0.0]])
-            self.sub_matrices[8] = np.array([[0.15],
-                                             [0.25]])
+            s_sub_matrices[2] = np.array([[0.15],
+                                          [0.25]])
             self.sub_matrices[9] = np.array([[0.0],
                                              [0.0]])
             self.sub_matrices[10] = np.array([[0.0],
@@ -223,30 +224,31 @@ class HardCodedChannel(MIMOChannel):
         # Create 4-dimensional matrix using the sub-matrices.
         self.ta_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, 1),
                                           dtype=complex)
-        for index, sub_matrix in self.sub_matrices.items():
+        for index, sub_matrix in s_sub_matrices.items():
             for element in range(nb_columns):
-                self.ta_channel_matrix[index + element, :, element, :] = sub_matrix
+                self.ta_channel_matrix[index * 4 + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.ta_channel_matrix.shape = (nb_rows * self.n_r, nb_columns)
         #print(self.ta_channel_matrix[: 8, : 2])
         # Save the channel vector of the transmit antenna in the channel matrix.
-        ta_channel_vector = np.vstack((self.sub_matrices.values()))
-        if self.channel_matrix.size == 0:
-            self.channel_matrix = np.reshape(ta_channel_vector, (ta_channel_vector.size, 1))
-        else:
+        #ta_channel_vector = np.vstack((self.sub_matrices.values()))
+        #if self.channel_matrix.size == 0:
+        #    self.channel_matrix = np.reshape(ta_channel_vector, (ta_channel_vector.size, 1))
+        #else:
             #self.channel_matrix = np.concatenate((self.channel_matrix, self.ta_channel_vector), axis=1)
             #self.channel_matrix = np.reshape(self.channel_matrix, tuple(reversed(self.ta_channel_matrix.shape)), 'F')
-            self.channel_matrix = np.hstack((self.channel_matrix, ta_channel_vector))
+        #    self.channel_matrix = np.hstack((self.channel_matrix, ta_channel_vector))
 
 
-    def apply_composed_channel(self, nb_col, signal_vector):
+    def apply_composed_channel(self, sps, signal_vector):
         """ Create a shortened Block-Toeplitz channel matrix for the training case. """
-        nb_rows = nb_col + self.multipaths - 1
-        nb_columns = nb_col
+        nb_rows = (self.frame_len + self.multipaths - 1) * sps
+        nb_columns = self.frame_len * sps
         #for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
-        self.sub_matrices[0] = np.array([[1.0, 0.5],
+        s_sub_matrices = dict()
+        s_sub_matrices[0] = np.array([[1.0, 0.5],
                                          [0.6, 0.5]])
         self.sub_matrices[1] = np.array([[0.0, 0.0],
                                          [0.0, 0.0]])
@@ -254,7 +256,7 @@ class HardCodedChannel(MIMOChannel):
                                          [0.0, 0.0]])
         self.sub_matrices[3] = np.array([[0.0, 0.0],
                                          [0.0, 0.0]])
-        self.sub_matrices[4] = np.array([[0.3 + 0.2j, 0.2j],
+        s_sub_matrices[1] = np.array([[0.3 + 0.2j, 0.2j],
                                          [0.4 + 0.2j, 0.5j]])
         self.sub_matrices[5] = np.array([[0.0, 0.0],
                                          [0.0, 0.0]])
@@ -262,7 +264,7 @@ class HardCodedChannel(MIMOChannel):
                                          [0.0, 0.0]])
         self.sub_matrices[7] = np.array([[0.0, 0.0],
                                          [0.0, 0.0]])
-        self.sub_matrices[8] = np.array([[0.2 + 0.1j, 0.15],
+        s_sub_matrices[2] = np.array([[0.2 + 0.1j, 0.15],
                                          [0.3 + 0.2j, 0.25]])
         self.sub_matrices[9] = np.array([[0.0, 0.0],
                                          [0.0, 0.0]])
@@ -273,11 +275,13 @@ class HardCodedChannel(MIMOChannel):
         # Create 4-dimensional matrix using the sub-matrices.
         c_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                           dtype=complex)
-        for index, sub_matrix in self.sub_matrices.items():
+        for index, sub_matrix in s_sub_matrices.items():
+            #print(" +++ " + str(index))
             for element in range(nb_columns):
-                c_channel_matrix[index + element, :, element, :] = sub_matrix
+                c_channel_matrix[index * sps + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         c_channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+        #print(c_channel_matrix[-16 :, -2 :])
         return (c_channel_matrix).dot(signal_vector)
 
     def apply_ta_channel_without_awgn(self, signal_vector):

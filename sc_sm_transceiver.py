@@ -173,12 +173,16 @@ class Transceiver:
             t = (index - span * sps / 2) * T_s
             if t == 0:
                 h_rrc[index] = factor * (1 - beta + (4 * beta / np.pi))
-            elif beta != 0 and np.absolute(t) == T_s / 4 / beta:
+            elif beta != 0 and t == T_s / 4 / beta:
+                print("Viable.")
+                h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
+            elif beta != 0 and t == -T_s / 4 / beta:
                 h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
             else:
                 h_rrc[index] = factor * ((np.sin(np.pi * t / T_s * (1 - beta)) + 4 * beta * t / T_s * np.cos(np.pi * t / T_s * (1 + beta))) /
                                          (np.pi * t / T_s * (1 - (4 * beta * t / T_s)**2)))
-        return np.convolve(h_rrc / np.sqrt(np.sum(np.absolute(h_rrc)**2)), frame, 'same')
+        h_rrc = h_rrc / np.sqrt(np.sum(np.abs(h_rrc)**2))
+        return np.convolve(h_rrc, frame, 'same')
 
     def remove_zero_pad(self, frame, prefix_len):
         """ Remove the padding of a frame, i.e. a list of symbols. """

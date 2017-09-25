@@ -54,9 +54,8 @@ def main():
     setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
     k = 1024
-    k_data = k
     # Number of multipath links.
-    p = 12
+    p = 3
     # Length of the Zero-Prefix.
     zp_len = p - 1
     # Signal to Noise Ratio.
@@ -92,9 +91,9 @@ def main():
         start = time.time()
         count = 0
         channel.set_snr(step)
+
         # TRAINING FOR EACH TRANSMIT ANTENNA.
         channel_response_list = []
-        samples_to_use = 0
         for ta in range(0, setup[0]):
             # TRAINING TRANSMISSIONS:
             sps = 4
@@ -103,19 +102,10 @@ def main():
             tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
-            channel.create_ta_channel_matrix(sps * k, ta)
-            #channel.create_ta_channel_matrix(sps * k + (sps * span) - 1, ta)
-
-            # FOR NOW: USE SISO CHANNEL MODEL
-            #h_s = np.zeros(100, dtype=complex)
-            #h_s[0] = 1
-            #h_s[3] = 1
-            #h_s[19] = 0.5
-            #h_s[99] = 0.2 + 0.2j
-            #h_s[int(sps/2)] = -2
-            #h_s[1*sps+1] = 1j
-            #h_s[2*sps+1] = .7+.7j
-            #h_s[3*sps+1] = -2-2j
+            channel.create_ta_channel_matrix(sps, ta)
+            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+            #rn = rx_frame + channel.add_awgn(rx_frame.size)
+            rn = rx_frame
 
             #plt.figure()
             #plt.subplot(211)
@@ -127,16 +117,11 @@ def main():
             #plt.plot(tx_frame)
             #plt.show()
 
-            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
-            #rx_frame = np.convolve(pulse, channel.get_ta_channel(ta), 'same')
-            rn = rx_frame + channel.add_awgn(rx_frame.size)
-
             #rx_frame = np.convolve(pulse, h_s)
             #rx_frame = np.reshape(rx_frame, (rx_frame.size, 1))
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
 
-            #print(rn[0 : 10])
             rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
             # Splitting for each reception antenna.
             y = []
@@ -144,10 +129,6 @@ def main():
                 y.append(transceiver.rrc_filter(1, span, sps, rn_split[ra]))
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
                 y[ra] = np.correlate(y[ra], c_prime, mode='same')
-
-                #rcorr = np.correlate(rn, c_prime, mode='same').real
-                #ycorr = np.correlate(y, c_prime, mode='same').real
-
 
                 #plt.figure()
                 #plt.subplot(211)
@@ -197,45 +178,47 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            #plt.show()
+            plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
             for _ in range(0, sps):
                 sum_energy.append((np.sum(np.absolute(y[0][_][:]**2)), _))
             samples_to_use = max(sum_energy)[1]
-            #print("SAMPLES TO USE: " + str(samples_to_use))
+            print("SAMPLES TO USE: " + str(samples_to_use))
             # Extract a channel impulse response vector.
             #strongest_path = max([channel_response.max() for channel_response in y])
-            strongest_path = k * 2 / 4
+            strongest_path = k * 2 / sps
             #print(strongest_path)
             channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use, strongest_path))
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        print(estimated_channel[: 8, : 2])
+        #print(estimated_channel[: 8, : 2])
         #print(estimated_channel[-8 :, : 2])
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
         #channel.create_channel_matrix_from_ta_vectors(sps * k + ((sps * span) - 1) / setup[0])
+
         # START TRANSMITTING DATA USING THE ESTIMATED CHANNEL.
-        sps = 4
-        span = 8
+        #sps = 4
+        #span = 8
         #transceiver.set_symbols_per_frame(k_data)
         for _ in range(0, rounds):
             # Send random data for now.
-            data_frame = transceiver.transmit_frame(k_data, zp_len)
+            #data_frame = transceiver.transmit_frame(k_data, zp_len)
             test = np.array([0, 1, 1, 0])
-            for _ in range(0, 9):
+            for l in range(0, 9):
                 test = np.concatenate((test, test))
             data_frame = test
             #print(data_frame.shape)
             #info_bits = np.ones((1024))
             #up_info = transceiver.upsampling(sps, info_bits)
-            tx_frame = transceiver.upsampling(sps, test)
-            pulsed_info = transceiver.rrc_filter(1, span, sps, tx_frame)
+            tx_data_frame = transceiver.upsampling(sps, data_frame)
+            pulsed_info = transceiver.rrc_filter(1, span, sps, tx_data_frame)
             #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
-            #print(data_frame_split[:, : 4])
+            #print(pulsed_info[: 4])
+            #print(transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, info_bits))[: 4])
             #rn_split = np.empty((setup[0], (sps * k + p - 1) * setup[1]), dtype=complex)
             #for ta in range(0, setup[0]):
                 #tx_frame = transceiver.upsampling(sps, data_frame_split[ta])
@@ -248,30 +231,36 @@ def main():
                 #print(rx_frame.shape)
                 #rn_split[ta] = rx_frame #+ channel.add_awgn(rx_frame.size)
                 #print(rx_frame.shape)
-            rx_pulse = channel.apply_composed_channel(k * sps, pulsed_info)
+            rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
+            #print(rx_pulse.shape)
             #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
             #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
             #rx_pulse[1] = transceiver.rrc_filter(1, span, sps, rx_pulse[1])
             #rx_frame = np.reshape(rx_pulse, (rx_pulse.size), 'F')
-            rx_frame = transceiver.rrc_filter(1, span, sps, rx_pulse)
-            print(rx_frame[0 : 4])
-            rx_data_frame = np.zeros((int(rx_frame.size / sps)), dtype=complex)
-            for index in range(0, int(rx_frame.size / sps)):
-                rx_data_frame[index] = rx_frame[index * sps + samples_to_use]
-            print(rx_data_frame[0 : 4])
-            print(estimated_channel.dot(data_frame)[0 : 4])
+            rx_filtered_frame = transceiver.rrc_filter(1, span, sps, rx_data_pulse)
+            #print(rx_filtered_frame[0 : 4])
+            rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)
+            #print(samples_to_use)
+            for index in range(0, int(rx_filtered_frame.size / sps) - 1):
+                rx_data_frame[index] = rx_filtered_frame[index * sps + samples_to_use+2]
+            print(rx_data_frame[: 4])
+            test_rx = estimated_channel.dot(data_frame)
+            print(test_rx[: 4])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            detected_data_frame = detector.detect(k_data,
+            detected_data_frame = detector.detect(k,
                                                   transceiver.get_symbol_list(),
                                                   estimated_channel,
                                                   rx_data_frame)
 
             # Show the number of bit errors which occurred.
-            tx_frame = data_frame.flatten()
+            #tx_frame = data_frame.flatten()
+            #tx_frame = data_frame
+            #print(detected_data_frame[: 10])
             detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
-            print(str(data_frame[: 10]) + " ~ " + str(detected_data_frame[: 10]))
-            for index in range(0, k_data * setup[0]):
-                if tx_frame[index] != detected_data_frame[index]:
+            print(str(data_frame[: 10].tolist()) + " ~ ")
+            print(str(detected_data_frame[: 10]))
+            for index in range(0, k * setup[0]):
+                if data_frame[index] != detected_data_frame[index]:
                     count += 1
 
         # BER calculation: Take combining gain into account, i.e. multiply by N_r.
