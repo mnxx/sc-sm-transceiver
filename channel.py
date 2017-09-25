@@ -238,6 +238,48 @@ class HardCodedChannel(MIMOChannel):
             #self.channel_matrix = np.reshape(self.channel_matrix, tuple(reversed(self.ta_channel_matrix.shape)), 'F')
             self.channel_matrix = np.hstack((self.channel_matrix, ta_channel_vector))
 
+
+    def apply_composed_channel(self, nb_col, signal_vector):
+        """ Create a shortened Block-Toeplitz channel matrix for the training case. """
+        nb_rows = nb_col + self.multipaths - 1
+        nb_columns = nb_col
+        #for _ in range(0, self.multipaths):
+            # Number of rows and columns of each sub-matrix is N_r and N_t.
+            # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
+        self.sub_matrices[0] = np.array([[1.0, 0.5],
+                                         [0.6, 0.5]])
+        self.sub_matrices[1] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[2] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[3] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[4] = np.array([[0.3 + 0.2j, 0.2j],
+                                         [0.4 + 0.2j, 0.5j]])
+        self.sub_matrices[5] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[6] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[7] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[8] = np.array([[0.2 + 0.1j, 0.15],
+                                         [0.3 + 0.2j, 0.25]])
+        self.sub_matrices[9] = np.array([[0.0, 0.0],
+                                         [0.0, 0.0]])
+        self.sub_matrices[10] = np.array([[0.0, 0.0],
+                                          [0.0, 0.0]])
+        self.sub_matrices[11] = np.array([[0.0, 0.0],
+                                          [0.0, 0.0]])
+        # Create 4-dimensional matrix using the sub-matrices.
+        c_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
+                                          dtype=complex)
+        for index, sub_matrix in self.sub_matrices.items():
+            for element in range(nb_columns):
+                c_channel_matrix[index + element, :, element, :] = sub_matrix
+        # Flatten the 4-dimensional matrix.
+        c_channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+        return (c_channel_matrix).dot(signal_vector)
+
     def apply_ta_channel_without_awgn(self, signal_vector):
         """ Directly apply the frequency selective channel without AWGN on a signal vector. """
         return (self.ta_channel_matrix).dot(signal_vector)

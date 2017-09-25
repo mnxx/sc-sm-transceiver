@@ -230,30 +230,36 @@ def main():
                 test = np.concatenate((test, test))
             data_frame = test
             #print(data_frame.shape)
-            info_bits = np.ones((1024))
-            up_info = transceiver.upsampling(sps, data_frame_split[ta])
+            #info_bits = np.ones((1024))
+            #up_info = transceiver.upsampling(sps, info_bits)
+            tx_frame = transceiver.upsampling(sps, test)
             pulsed_info = transceiver.rrc_filter(1, span, sps, tx_frame)
-            data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
-            print(data_frame_split[:, : 4])
-            rn_split = np.empty((setup[0], (sps * k + p - 1) * setup[1]), dtype=complex)
-            for ta in range(0, setup[0]):
+            #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
+            #print(data_frame_split[:, : 4])
+            #rn_split = np.empty((setup[0], (sps * k + p - 1) * setup[1]), dtype=complex)
+            #for ta in range(0, setup[0]):
                 #tx_frame = transceiver.upsampling(sps, data_frame_split[ta])
                 #pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
                 # Apply the channel on the pulse.
                 #print(pulse.shape)
-                channel.create_ta_channel_matrix(sps * k, ta)
-                rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+                #channel.create_ta_channel_matrix(sps * k, ta)
+                #rx_frame = channel.apply_ta_channel_without_awgn(pulse)
                 #rx_frame = np.convolve(pulse, channel.get_ta_channel(ta), 'same')
                 #print(rx_frame.shape)
-                rn_split[ta] = rx_frame #+ channel.add_awgn(rx_frame.size)
+                #rn_split[ta] = rx_frame #+ channel.add_awgn(rx_frame.size)
                 #print(rx_frame.shape)
-            rx_pulse = np.reshape(rn_split, (rn_split.size), 'F')
+            rx_pulse = channel.apply_composed_channel(k * sps, pulsed_info)
+            #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
+            #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
+            #rx_pulse[1] = transceiver.rrc_filter(1, span, sps, rx_pulse[1])
+            #rx_frame = np.reshape(rx_pulse, (rx_pulse.size), 'F')
             rx_frame = transceiver.rrc_filter(1, span, sps, rx_pulse)
+            print(rx_frame[0 : 4])
             rx_data_frame = np.zeros((int(rx_frame.size / sps)), dtype=complex)
-            for index in range(1, int(rx_frame.size / sps)):
+            for index in range(0, int(rx_frame.size / sps)):
                 rx_data_frame[index] = rx_frame[index * sps + samples_to_use]
-            print(rx_data_frame[200 : 203])
-            print(estimated_channel.dot(data_frame)[200 : 203])
+            print(rx_data_frame[0 : 4])
+            print(estimated_channel.dot(data_frame)[0 : 4])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
             detected_data_frame = detector.detect(k_data,
                                                   transceiver.get_symbol_list(),
@@ -263,7 +269,7 @@ def main():
             # Show the number of bit errors which occurred.
             tx_frame = data_frame.flatten()
             detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
-            print(str(data_frame[: 6]) + " ~ " + str(detected_data_frame[: 6]))
+            print(str(data_frame[: 10]) + " ~ " + str(detected_data_frame[: 10]))
             for index in range(0, k_data * setup[0]):
                 if tx_frame[index] != detected_data_frame[index]:
                     count += 1
