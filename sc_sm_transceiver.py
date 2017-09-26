@@ -164,17 +164,16 @@ class Transceiver:
 
     def rrc_filter(self, beta, span, sps, frame):
         """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
-        T_sample = 1.0
+        T_sample = 1.0 / 1e5
         T_s = sps * T_sample
         factor = 1 / np.sqrt(T_s)
         # Length of the filter is the number of symbols  multiplied by the number of samples per symbol.
         h_rrc = np.zeros(span * sps, dtype=float)
         for index in range(0, span * sps):
-            t = (index - span * sps / 2) * T_s
+            t = (index - span * sps / 2) * T_sample
             if t == 0:
                 h_rrc[index] = factor * (1 - beta + (4 * beta / np.pi))
             elif beta != 0 and t == T_s / 4 / beta:
-                print("Viable.")
                 h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
             elif beta != 0 and t == -T_s / 4 / beta:
                 h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
@@ -442,6 +441,7 @@ class ChannelEstimator:
                 if abs_val > threshold:
                     multipaths[ra].append([val / strongest_path, index])
                     counter[ra] += 1
+            # ADD EXCEPTION IF NO MULTIPATH HAS BEEN FOUND!
             fastest_path = multipaths[ra][0][1]
             for path in multipaths[ra]:
                 path[1] = path[1] - fastest_path

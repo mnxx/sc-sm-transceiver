@@ -174,59 +174,59 @@ class HardCodedChannel(MIMOChannel):
         if antenna == 0:
             s_sub_matrices[0] = np.array([[1.0],
                                           [0.6]])
-            self.sub_matrices[1] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[2] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[3] = np.array([[0.0],
-                                             [0.0]])
+            #self.sub_matrices[1] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[2] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[3] = np.array([[0.0],
+            #                                 [0.0]])
             s_sub_matrices[1] = np.array([[0.3 + 0.2j],
                                           [0.4 + 0.2j]])
-            self.sub_matrices[5] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[6] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[7] = np.array([[0.0],
-                                             [0.0]])
+            #self.sub_matrices[5] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[6] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[7] = np.array([[0.0],
+            #                                 [0.0]])
             s_sub_matrices[2] = np.array([[0.2 + 0.1j],
-                                             [0.3 + 0.2j]])
-            self.sub_matrices[9] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[10] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[11] = np.array([[0.0],
-                                             [0.0]])
+                                          [0.3 + 0.2j]])
+            #self.sub_matrices[9] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[10] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[11] = np.array([[0.0],
+            #                                 [0.0]])
         else:
             s_sub_matrices[0] = np.array([[0.7],
                                           [1.0]])
-            self.sub_matrices[1] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[2] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[3] = np.array([[0.0],
-                                             [0.0]])
+            #self.sub_matrices[1] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[2] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[3] = np.array([[0.0],
+            #                                 [0.0]])
             s_sub_matrices[1] = np.array([[0.2j],
-                                             [0.5j]])
-            self.sub_matrices[5] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[6] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[7] = np.array([[0.0],
-                                             [0.0]])
+                                          [0.5j]])
+            #self.sub_matrices[5] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[6] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[7] = np.array([[0.0],
+            #                                 [0.0]])
             s_sub_matrices[2] = np.array([[0.15],
                                           [0.25]])
-            self.sub_matrices[9] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[10] = np.array([[0.0],
-                                             [0.0]])
-            self.sub_matrices[11] = np.array([[0.0],
-                                             [0.0]])
+            #self.sub_matrices[9] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[10] = np.array([[0.0],
+            #                                 [0.0]])
+            #self.sub_matrices[11] = np.array([[0.0],
+            #                                 [0.0]])
         # Create 4-dimensional matrix using the sub-matrices.
         self.ta_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, 1),
                                           dtype=complex)
         for index, sub_matrix in s_sub_matrices.items():
             for element in range(nb_columns):
-                self.ta_channel_matrix[index * 4 + element, :, element, :] = sub_matrix
+                self.ta_channel_matrix[index * sps + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.ta_channel_matrix.shape = (nb_rows * self.n_r, nb_columns)
         #print(self.ta_channel_matrix[: 8, : 2])
@@ -242,46 +242,65 @@ class HardCodedChannel(MIMOChannel):
 
     def apply_composed_channel(self, sps, signal_vector):
         """ Create a shortened Block-Toeplitz channel matrix for the training case. """
-        nb_rows = (self.frame_len + self.multipaths - 1) * sps
-        nb_columns = self.frame_len * sps
+        nb_rows = self.frame_len + self.multipaths - 1
+        nb_columns = self.frame_len
         #for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             # Hard coded values: ONLY WORKS FOR 2x2 SCENARIO!
         s_sub_matrices = dict()
-        s_sub_matrices[0] = np.array([[1.0, 0.5],
-                                         [0.6, 0.5]])
-        self.sub_matrices[1] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        self.sub_matrices[2] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        self.sub_matrices[3] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        s_sub_matrices[1] = np.array([[0.3 + 0.2j, 0.2j],
-                                         [0.4 + 0.2j, 0.5j]])
-        self.sub_matrices[5] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        self.sub_matrices[6] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        self.sub_matrices[7] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        s_sub_matrices[2] = np.array([[0.2 + 0.1j, 0.15],
-                                         [0.3 + 0.2j, 0.25]])
-        self.sub_matrices[9] = np.array([[0.0, 0.0],
-                                         [0.0, 0.0]])
-        self.sub_matrices[10] = np.array([[0.0, 0.0],
-                                          [0.0, 0.0]])
-        self.sub_matrices[11] = np.array([[0.0, 0.0],
-                                          [0.0, 0.0]])
+        s_sub_matrices[0] = np.array([[1.0, 0, 0, 0, 0.7, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0.6, 0, 0, 0, 1.0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0]])
+        #self.sub_matrices[1] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        #self.sub_matrices[2] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        #self.sub_matrices[3] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        s_sub_matrices[1] = np.array([[0.3 + 0.2j, 0, 0, 0, 0.2j, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0.4 + 0.2j, 0, 0, 0, 0.5j, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0]])
+        #self.sub_matrices[5] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        #self.sub_matrices[6] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        #self.sub_matrices[7] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        s_sub_matrices[2] = np.array([[0.2 + 0.1j, 0, 0, 0, 0.15, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0.3 + 0.2j, 0, 0, 0, 0.25, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0],
+                                      [0, 0, 0, 0, 0, 0, 0, 0]])
+        #self.sub_matrices[9] = np.array([[0.0, 0.0],
+        #                                 [0.0, 0.0]])
+        #self.sub_matrices[10] = np.array([[0.0, 0.0],
+        #                                  [0.0, 0.0]])
+        #self.sub_matrices[11] = np.array([[0.0, 0.0],
+        #                                  [0.0, 0.0]])
         # Create 4-dimensional matrix using the sub-matrices.
-        c_channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
+        c_channel_matrix = np.zeros((nb_rows, self.n_r * sps, nb_columns, self.n_t * sps),
                                           dtype=complex)
         for index, sub_matrix in s_sub_matrices.items():
             #print(" +++ " + str(index))
             for element in range(nb_columns):
-                c_channel_matrix[index * sps + element, :, element, :] = sub_matrix
+                c_channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
-        c_channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
-        #print(c_channel_matrix[-16 :, -2 :])
+        c_channel_matrix.shape = (nb_rows * self.n_r * sps, nb_columns * self.n_t * sps)
+        #print(c_channel_matrix[: 16, : 8])
+        #print(c_channel_matrix.shape)
         return (c_channel_matrix).dot(signal_vector)
 
     def apply_ta_channel_without_awgn(self, signal_vector):
