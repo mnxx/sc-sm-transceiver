@@ -99,12 +99,13 @@ def main():
             sps = 4
             span = 8
             c = channel_estimator.generate_zadoffchu_sequence(1, int(k / 2))
-            tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
+            tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c, ta))
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             #pulse = tx_frame
-            channel.create_ta_channel_matrix(sps, ta)
-            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+            #channel.create_ta_channel_matrix(sps, ta)
+            #rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+            rx_frame = channel.apply_composed_channel(sps, pulse)
             #rn = rx_frame + channel.add_awgn(rx_frame.size)
             rn = rx_frame
 
@@ -127,8 +128,12 @@ def main():
             #rx_frame = np.reshape(rx_frame, (rx_frame.size, 1))
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
-
-            rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
+            #print(rn[: 12])
+            rn_first_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
+            rn_split = np.reshape(rn_first_split[0], (setup[1], int(rn_first_split[0].size / setup[1])), 'F')
+            print(rn_split[0][: 12])
+            print(rn_split[1][: 12])
+            exit()
             # Splitting for each reception antenna.
             y = []
             for ra in range(0, setup[1]):
@@ -148,10 +153,10 @@ def main():
                 #plt.plot(ycorr)
                 #plt.show()
 
-                #plt.figure()
+                plt.figure()
                 #plt.subplot(211)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
-                #plt.plot(y[ra].real, 'c-<')
+                plt.plot(y[ra].real, 'c-<')
                 #plt.subplot(212)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
                 #plt.plot(c_prime)
@@ -172,7 +177,7 @@ def main():
                 #y[ra] = y[ra][zone - sps - 1 : zone + 100]
                 #y[ra] = y[ra][1000 : 1040]
                 zone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps - 1
-                y[ra] = y[ra][zone : zone + 20 * sps]
+                y[ra] = y[ra][zone : zone + 10 * sps]
                 y[ra] = np.reshape(y[ra], (sps, int(y[ra].size / sps)), 'F')
                 #zone = int(int(samples_len / sps) / 2)
                 #for index in range(0, sps):
@@ -194,7 +199,7 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            #plt.show()
+            plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
@@ -232,8 +237,15 @@ def main():
             #info_bits = np.ones((1024))
             #up_info = transceiver.upsampling(sps, info_bits)
             tx_data_frame = transceiver.upsampling(sps, data_frame)
-            #pulsed_info = transceiver.rrc_filter(1, span, sps, tx_data_frame)
-            pulsed_info = tx_data_frame
+            pulsed_info = transceiver.rrc_filter(1, span, sps, tx_data_frame)
+            # ADD ANTENNA INFORMATION.
+            #data_pulse = np.zeros(pulsed_info.size * 2, dtype=complex)
+            #for sample in range(0, 1024):
+            #    index = sample * sps
+            #    for _ in range(0, sps):
+            #        data_pulse[index * 2 + _] = pulsed_info[index + _]
+            #print(data_pulse[0 : 12])
+            #pulsed_info = tx_data_frame
             #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
             #print(pulsed_info[: 4])
             #print(transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, info_bits))[: 4])
@@ -250,14 +262,15 @@ def main():
                 #rn_split[ta] = rx_frame #+ channel.add_awgn(rx_frame.size)
                 #print(rx_frame.shape)
             rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
+            #rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
             #print(rx_pulse.shape)
             #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
             #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
             #rx_pulse[1] = transceiver.rrc_filter(1, span, sps, rx_pulse[1])
             #rx_frame = np.reshape(rx_pulse, (rx_pulse.size), 'F')
 
-            #rx_filtered_frame = transceiver.rrc_filter(1, span, sps, rx_data_pulse)
-            rx_filtered_frame = rx_data_pulse
+            rx_filtered_frame = transceiver.rrc_filter(1, span, sps, rx_data_pulse)
+            #rx_filtered_frame = rx_data_pulse
             #print(rx_filtered_frame[: 40])
             #print(rx_filtered_frame[0 : 4])
             rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)

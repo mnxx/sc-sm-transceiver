@@ -370,9 +370,20 @@ class ChannelEstimator:
         """ Function to create a Zadoff-Chu sequence of a given root index and size. """
         return np.exp((-1j * np.pi * root_index * np.arange(sequence_length) * (np.arange(sequence_length) + 1)) / sequence_length)
 
-    def create_flc_frame(self, sequence):
+    def create_flc_frame(self, sequence, antenna_index):
         """ Function to create a transmission frame used for the Fixed-Lag-Correlation. """
-        return np.concatenate((sequence, sequence))
+        # Convention: Antenna indices start with 1.
+        antenna_index = antenna_index + 1
+        #print(sequence[: 10])
+        frame = np.concatenate((sequence, sequence))
+        # The training data blocks are transformed to SM symbols for each antenna.
+        # NON-GENERIC!
+        complete_frame = np.zeros(frame.size * self.n_t, dtype=complex)
+        for index, symbol in enumerate(frame):
+            sm_symbol = [0] * (antenna_index - 1) + [symbol] + [0] * (self.n_t - antenna_index)
+            for _ in range(0, self.n_t):
+                complete_frame[index * self.n_t + _] = sm_symbol[_]
+        return complete_frame
 
     def create_flc_prime(self, sequence):
         """ Function to create a frame used by the Fixed-Lag-Correlation at the receiver. """
