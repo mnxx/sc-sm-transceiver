@@ -99,13 +99,14 @@ def main():
             sps = 4
             span = 8
             c = channel_estimator.generate_zadoffchu_sequence(1, int(k / 2))
-            tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c, ta))
+            #tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c, ta))
+            tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             #pulse = tx_frame
-            #channel.create_ta_channel_matrix(sps, ta)
-            #rx_frame = channel.apply_ta_channel_without_awgn(pulse)
-            rx_frame = channel.apply_composed_channel(sps, pulse)
+            channel.create_ta_channel_matrix(sps, ta)
+            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+            #rx_frame = channel.apply_composed_channel(sps, pulse)
             #rn = rx_frame + channel.add_awgn(rx_frame.size)
             rn = rx_frame
 
@@ -129,15 +130,21 @@ def main():
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
             #print(rn[: 12])
-            rn_first_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
-            rn_split = np.reshape(rn_first_split[0], (setup[1], int(rn_first_split[0].size / setup[1])), 'F')
-            print(rn_split[0][: 12])
-            print(rn_split[1][: 12])
-            exit()
+            #rn_split = np.reshape(rn, (sps, int(rn.size / sps)))
+            #rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
+            #rn_first_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
+            #rn_split = np.reshape(rn_first_split[0], (setup[1], int(rn_first_split[0].size / setup[1])), 'F')
+            #print(rn_split[0][: 12])
+            #print(rn_split[1][: 12])
             # Splitting for each reception antenna.
+            #block_len = int(rn_split.shape[1] / setup[0])
             y = []
             for ra in range(0, setup[1]):
-                y.append(transceiver.rrc_filter(1, span, sps, rn_split[ra]))
+                path_rn = np.zeros((int(rn.size / setup[1])), dtype=complex)
+                for index in range(0, int(path_rn.size / sps)):
+                    position = (index * setup[1] + ra) * sps
+                    path_rn[index * sps : index * sps + sps] = rn[position : position + sps]
+                y.append(transceiver.rrc_filter(1, span, sps, path_rn))
                 #y.append(rn_split[ra])
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
                 y[ra] = np.correlate(y[ra], c_prime, mode='full')
@@ -176,7 +183,7 @@ def main():
                 #y[ra] = y[ra][zone : zone + 20]
                 #y[ra] = y[ra][zone - sps - 1 : zone + 100]
                 #y[ra] = y[ra][1000 : 1040]
-                zone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps - 1
+                zone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps - 2
                 y[ra] = y[ra][zone : zone + 10 * sps]
                 y[ra] = np.reshape(y[ra], (sps, int(y[ra].size / sps)), 'F')
                 #zone = int(int(samples_len / sps) / 2)
@@ -187,7 +194,7 @@ def main():
                 plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
                 #start = int(k / 2) - sps
                 #stop = int(k / 2) + sps
-                plt.plot(y[ra][0][:].real, 'k-<')
+                plt.plot(np.abs(y[ra][0][:]), 'k-<')
                 plt.plot(y[ra][1][:].real, 'b-<')
                 plt.plot(y[ra][2][:].real, 'g-<')
                 plt.plot(y[ra][3][:].real, 'r-<')
@@ -209,7 +216,7 @@ def main():
             print("SAMPLES TO USE: " + str(samples_to_use))
             # Extract a channel impulse response vector.
             #strongest_path = max([channel_response.max() for channel_response in y])
-            strongest_path = k * 2 / sps
+            strongest_path = 200
             #print(strongest_path)
             #samples_to_use = 0
             channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use, strongest_path))
@@ -229,21 +236,22 @@ def main():
         for _ in range(0, rounds):
             # Send random data for now.
             #data_frame = transceiver.transmit_frame(k, zp_len)
-            test = np.array([0, 1, 1, 0])
+            test = np.array([0, 1, 0, 1])
             for l in range(0, 9):
                 test = np.concatenate((test, test))
             data_frame = test
             #print(data_frame.shape)
-            #info_bits = np.ones((1024))
-            #up_info = transceiver.upsampling(sps, info_bits)
-            tx_data_frame = transceiver.upsampling(sps, data_frame)
-            pulsed_info = transceiver.rrc_filter(1, span, sps, tx_data_frame)
+            info_bits = np.ones((1024))
+            up_info = transceiver.upsampling(sps, info_bits)
+            #tx_data_frame = transceiver.upsampling(sps, data_frame)
+            #pulsed_info = transceiver.rrc_filter(1, span, sps, tx_data_frame)
+            pulsed_info = transceiver.rrc_filter(1, span, sps, up_info)
             # ADD ANTENNA INFORMATION.
-            #data_pulse = np.zeros(pulsed_info.size * 2, dtype=complex)
-            #for sample in range(0, 1024):
-            #    index = sample * sps
-            #    for _ in range(0, sps):
-            #        data_pulse[index * 2 + _] = pulsed_info[index + _]
+            data_pulse = np.zeros(pulsed_info.size * 2, dtype=complex)
+            for sample in range(0, 1024):
+                index = sample * sps
+                for _ in range(0, sps):
+                    data_pulse[index * 2 + _] = pulsed_info[index + _]
             #print(data_pulse[0 : 12])
             #pulsed_info = tx_data_frame
             #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
@@ -261,8 +269,8 @@ def main():
                 #print(rx_frame.shape)
                 #rn_split[ta] = rx_frame #+ channel.add_awgn(rx_frame.size)
                 #print(rx_frame.shape)
-            rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
-            #rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
+            #rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
+            rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
             #print(rx_pulse.shape)
             #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
             #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
