@@ -84,7 +84,7 @@ def main():
     rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [30]
+    steps = [50]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -213,7 +213,7 @@ def main():
             for _ in range(0, sps):
                 sum_energy.append((np.sum(np.absolute(y[0][_][:]**2)), _))
             samples_to_use = max(sum_energy)[1]
-            print("SAMPLES TO USE: " + str(samples_to_use))
+            #print("SAMPLES TO USE: " + str(samples_to_use))
             # Extract a channel impulse response vector.
             #strongest_path = max([channel_response.max() for channel_response in y])
             strongest_path = 200
@@ -223,7 +223,7 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        print(estimated_channel[: 8, : 2])
+        #print(estimated_channel[: 8, : 2])
         #print(estimated_channel[-8 :, : 2])
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
@@ -290,6 +290,7 @@ def main():
             #test_rx = estimated_channel.dot(data_frame)
             #print(test_rx[: 4])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
+            print(rx_data_frame.shape)
             detected_data_frame = detector.detect(k,
                                                   transceiver.get_symbol_list(),
                                                   estimated_channel,
