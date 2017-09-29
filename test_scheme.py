@@ -33,7 +33,7 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 4
+    m = 2
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -48,10 +48,10 @@ def main():
     detector = det(setup, m)
 
     # LOOP FOR TESTING PURPOSES.
-    rounds = 10
+    rounds = 1
     # BER is measured for the following SNRs.
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [10]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    steps = [20]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -70,7 +70,7 @@ def main():
             # Channel estimation: For now, perfect Channel State Information is assumed.
 
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            print(rx_frame[: 10])
+            #print(rx_frame[: 10])
             detected_frame = detector.detect(k,
                                              transceiver.get_symbol_list(),
                                              channel.get_channel_matrix(),
@@ -79,7 +79,9 @@ def main():
 
             # Show the number of bit errors which occurred.
             tx_frame = tx_frame.flatten()
+            print(tx_frame[: 10])
             detected_frame = [symbol for sm_symbol in detected_frame for symbol in sm_symbol]
+            print(detected_frame[: 10])
             for index in range(0, k * setup[0]):
                 if tx_frame[index] != detected_frame[index]:
                     count += 1

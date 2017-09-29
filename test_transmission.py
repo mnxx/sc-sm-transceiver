@@ -84,7 +84,7 @@ def main():
     rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [50]
+    steps = [20]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -107,8 +107,8 @@ def main():
             channel.create_ta_channel_matrix(sps, ta)
             rx_frame = channel.apply_ta_channel_without_awgn(pulse)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
-            #rn = rx_frame + channel.add_awgn(rx_frame.size)
-            rn = rx_frame
+            rn = rx_frame + channel.add_awgn(rx_frame.size)
+            #rn = rx_frame
 
             #aka = np.ones((1))
             #aka_pulsed = transceiver.rrc_filter(1, span, sps, aka)
@@ -195,9 +195,9 @@ def main():
                 #start = int(k / 2) - sps
                 #stop = int(k / 2) + sps
                 plt.plot(np.abs(y[ra][0][:]), 'k-<')
-                plt.plot(y[ra][1][:].real, 'b-<')
-                plt.plot(y[ra][2][:].real, 'g-<')
-                plt.plot(y[ra][3][:].real, 'r-<')
+                plt.plot(np.abs(y[ra][1][:]), 'b-<')
+                plt.plot(np.abs(y[ra][2][:]), 'g-<')
+                plt.plot(np.abs(y[ra][3][:]), 'r-<')
 
             #plt.figure()
             #plt.title('Poly-Crosscorrelation.')
@@ -206,7 +206,7 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            plt.show()
+            #plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
@@ -271,6 +271,7 @@ def main():
                 #print(rx_frame.shape)
             #rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
             rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
+            rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             #print(rx_pulse.shape)
             #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
             #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
@@ -286,7 +287,7 @@ def main():
             for index in range(0, int(rx_filtered_frame.size / sps)):
                 rx_data_frame[index] = rx_filtered_frame[index * sps + samples_to_use]
             #print(rx_data_frame[: 3])
-            test_rx = estimated_channel.dot(data_frame)
+            #test_rx = estimated_channel.dot(data_frame)
             #print(test_rx[: 4])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
             detected_data_frame = detector.detect(k,

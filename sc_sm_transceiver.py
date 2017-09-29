@@ -218,8 +218,6 @@ class LSSDetector:
             e.append(0)
         nb_paths = 0
         # Decision process is repeated K (the frame length) steps.
-        count = 0
-        count2 = 0
         # First step: all M paths consist of one symbol: choose M different symbols.
         possible_first_metrics = []
         for index, possible_symbol in enumerate(symbol_list):
@@ -231,9 +229,10 @@ class LSSDetector:
             # Compute the metrics for each candidate vector.
             # Each metric is a tuple of the value and the symbol.
             metric = ((np.linalg.norm(rx_vector[: self.n_r]
-                                                 - h.dot(x_m)))**2, possible_symbol)
+                                      - h.dot(x_m)))**2, possible_symbol)
             possible_first_metrics.append(metric)
         possible_first_metrics.sort()
+        #print(possible_first_metrics)
         for m, metric in enumerate(possible_first_metrics[0 : self.M]):
             # Update the value of the accumulated metrics.
             e[m] = metric[0]
@@ -307,6 +306,7 @@ class LSSDetector:
             final_metric = ((np.linalg.norm(rx_vector - channel.dot(symbols))**2), index)
             final_metric_list.append(final_metric)
         final_metric_list.sort()
+        #print(final_metric_list)
         best_m = final_metric_list[0][1]
         # Return the Vector of the K * N_t symbols with the best overall metrics.
         return D[best_m]
