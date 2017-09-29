@@ -223,11 +223,13 @@ class LSSDetector:
         for index, possible_symbol in enumerate(symbol_list):
             # Reshape list to a numpy array in vector form (K * N_t, 1).
             #print(str(len(possible_symbol)) + " ~ " + str(self.n_t) + " ~~ " + str(possible_symbol))
-            x_m = np.reshape(possible_symbol, (self.n_t, 1))
+            x_m = np.reshape(possible_symbol, (self.n_t))
             # All H_x block-sub-matrices are N_r x N_t.
             h = channel[: self.n_r, : self.n_t]
             # Compute the metrics for each candidate vector.
             # Each metric is a tuple of the value and the symbol.
+            #print(str(rx_vector[: self.n_r].shape) + " ### " + str(h.shape) +
+            #      " ## " + str(h.dot(x_m)) + " ### " + str(possible_symbol))
             metric = ((np.linalg.norm(rx_vector[: self.n_r]
                                       - h.dot(x_m)))**2, possible_symbol)
             possible_first_metrics.append(metric)
@@ -259,7 +261,7 @@ class LSSDetector:
                     #count += 1
                     #print(count)
                     #print(len(possible_symbol_vector))
-                    x_m = np.reshape(possible_symbol_vector, (self.n_t * (step + 1), 1))
+                    x_m = np.reshape(possible_symbol_vector, (self.n_t * (step + 1)))
                     # All H_x block-sub-matrices are N_r x N_t.
                     h = channel[self.n_r * step : self.n_r * step + self.n_r,
                                 : self.n_t * step + self.n_t]
@@ -302,7 +304,7 @@ class LSSDetector:
         #print(D)
         for index, estimated_symbols in enumerate(D):
             #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
-            symbols = np.reshape(estimated_symbols, (self.n_t * frame_len, 1))
+            symbols = np.reshape(estimated_symbols, (self.n_t * frame_len))
             final_metric = ((np.linalg.norm(rx_vector - channel.dot(symbols))**2), index)
             final_metric_list.append(final_metric)
         final_metric_list.sort()

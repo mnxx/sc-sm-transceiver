@@ -51,7 +51,7 @@ def main():
     rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [20]
+    steps = [5]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:

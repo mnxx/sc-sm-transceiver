@@ -63,7 +63,7 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 2
+    m = 4
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -84,7 +84,7 @@ def main():
     rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [20]
+    steps = [30]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:

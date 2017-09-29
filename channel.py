@@ -55,10 +55,10 @@ class MIMOChannel:
 
     def create_awgn_vector(self):
         """ Create an additive white Gaussian noise vector. """
-        return (np.random.normal(0, np.sqrt( 10**(-self.snr / 10) / 2),
-                                 ((self.frame_len + self.multipaths - 1) * self.n_r, 1))
+        return (np.random.normal(0, np.sqrt(10**(-self.snr / 10) / 2),
+                                 ((self.frame_len + self.multipaths - 1) * self.n_r))
                 + 1j * np.random.normal(0, np.sqrt(10**(-self.snr / 10) / 2),
-                                        ((self.frame_len + self.multipaths - 1) * self.n_r, 1)))
+                                        ((self.frame_len + self.multipaths - 1) * self.n_r)))
 
     def add_awgn(self, vector_len):
         """ Create an AWGN Vector of a given size. """
