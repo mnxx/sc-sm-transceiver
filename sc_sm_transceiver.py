@@ -228,13 +228,12 @@ class LSSDetector:
             h = channel[: self.n_r, : self.n_t]
             # Compute the metrics for each candidate vector.
             # Each metric is a tuple of the value and the symbol.
-            #print(str(rx_vector[: self.n_r].shape) + " ### " + str(h.shape) +
-            #      " ## " + str(h.dot(x_m)) + " ### " + str(possible_symbol))
+            #print(str(rx_vector[: self.n_r].shape) + " ### " + str(h.shape) + " ## " + str(h.dot(x_m)) + " ### " + str(possible_symbol))
             metric = ((np.linalg.norm(rx_vector[: self.n_r]
                                       - h.dot(x_m)))**2, possible_symbol)
             possible_first_metrics.append(metric)
         possible_first_metrics.sort()
-        #print(possible_first_metrics)
+        print(possible_first_metrics)
         for m, metric in enumerate(possible_first_metrics[0 : self.M]):
             # Update the value of the accumulated metrics.
             e[m] = metric[0]
@@ -301,7 +300,8 @@ class LSSDetector:
         # Final detection: Find the frame with the overall minimum metric of the M estimated frames.
         # This time the metric is calculated by a maximum likelihood detection.
         final_metric_list = []
-        #print(D)
+        #print(D[0][: 10])
+        print(e)
         for index, estimated_symbols in enumerate(D):
             #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
             symbols = np.reshape(estimated_symbols, (self.n_t * frame_len))
