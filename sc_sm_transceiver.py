@@ -233,7 +233,7 @@ class LSSDetector:
                                       - h.dot(x_m)))**2, possible_symbol)
             possible_first_metrics.append(metric)
         possible_first_metrics.sort()
-        print(possible_first_metrics)
+        #print(possible_first_metrics)
         for m, metric in enumerate(possible_first_metrics[0 : self.M]):
             # Update the value of the accumulated metrics.
             e[m] = metric[0]
@@ -301,7 +301,7 @@ class LSSDetector:
         # This time the metric is calculated by a maximum likelihood detection.
         final_metric_list = []
         #print(D[0][: 10])
-        print(e)
+        #print(e)
         for index, estimated_symbols in enumerate(D):
             #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
             symbols = np.reshape(estimated_symbols, (self.n_t * frame_len))

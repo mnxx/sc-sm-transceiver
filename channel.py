@@ -109,6 +109,10 @@ class MIMOChannel:
         ce_channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
         return ce_channel_matrix
 
+    def apply_frequency_offset(self, signal, f_offset):
+        """ Apply a frequency offset to a given signal. """
+        return signal * np.exp(1j * f_offset)
+
 
 class LTEChannel(MIMOChannel):
     """ Class implementing different LTE channel scenarios defined by 3GPP. """
@@ -335,7 +339,7 @@ class HardCodedChannel(MIMOChannel):
                 c_channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         c_channel_matrix.shape = (nb_rows * self.n_r * sps, nb_columns * self.n_t * sps)
-        #print(c_channel_matrix[: 16, : 8])
+        #print(c_channel_matrix[: 16, : 6])
         #print(c_channel_matrix.shape)
         return (c_channel_matrix).dot(signal_vector)
 

@@ -63,7 +63,7 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 4
+    m = 2
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -107,6 +107,9 @@ def main():
             channel.create_ta_channel_matrix(sps, ta)
             rx_frame = channel.apply_ta_channel_without_awgn(pulse)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
+            #print(rx_frame[12 : 24])
+            rx_frame = channel.apply_frequency_offset(rx_frame, 3.2)
+            #print(rx_frame[12 : 24])
             rn = rx_frame + channel.add_awgn(rx_frame.size)
             #rn = rx_frame
 
@@ -160,10 +163,12 @@ def main():
                 #plt.plot(ycorr)
                 #plt.show()
 
-                plt.figure()
+                #plt.figure()
                 #plt.subplot(211)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
-                plt.plot(y[ra].real, 'c-<')
+                #plt.plot(y[ra].real, 'c-<')
+                #plt.plot(np.arctan2(y[ra].imag, y[ra].real), 'c-<')
+
                 #plt.subplot(212)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
                 #plt.plot(c_prime)
@@ -199,6 +204,11 @@ def main():
                 plt.plot(np.abs(y[ra][2][:]), 'g-<')
                 plt.plot(np.abs(y[ra][3][:]), 'r-<')
 
+                phase = np.arctan2(y[ra][0].imag, y[ra][0].real)
+                plt.figure()
+                plt.plot(phase, 'c-<')
+                print(str(max(phase)) + " ~~~ " + str(phase[1]))
+
             #plt.figure()
             #plt.title('Poly-Crosscorrelation.')
             #plt.plot(pycorr[0][999 : 1080], 'k-<')
@@ -206,7 +216,7 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            #plt.show()
+            plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
@@ -223,12 +233,12 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        #print(estimated_channel[: 8, : 2])
+        print(estimated_channel[: 8, : 2])
         #print(estimated_channel[-8 :, : 2])
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
         #channel.create_channel_matrix_from_ta_vectors(sps * k + ((sps * span) - 1) / setup[0])
-
+        exit()
         # START TRANSMITTING DATA USING THE ESTIMATED CHANNEL.
         #sps = 4
         #span = 8
@@ -236,7 +246,7 @@ def main():
         for _ in range(0, rounds):
             # Send random data for now.
             #data_frame = transceiver.transmit_frame(k, zp_len)
-            test = np.array([0, 1, 0, 1])
+            test = np.array([1, 0, 1, 0])
             for l in range(0, 9):
                 test = np.concatenate((test, test))
             data_frame = test
@@ -277,20 +287,22 @@ def main():
             #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
             #rx_pulse[1] = transceiver.rrc_filter(1, span, sps, rx_pulse[1])
             #rx_frame = np.reshape(rx_pulse, (rx_pulse.size), 'F')
-
-            rx_filtered_frame = transceiver.rrc_filter(1, span, sps, rx_data_pulse)
+            #print(rx_data_pulse[0 : 12])
+            #rx_filtered_frame = transceiver.rrc_filter(1, span, sps, rx_data_pulse)
             #rx_filtered_frame = rx_data_pulse
-            #print(rx_filtered_frame[: 40])
+            #print(rx_filtered_frame[: 12])
             #print(rx_filtered_frame[0 : 4])
-            rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)
+            #rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)
+            rx_data_frame = np.zeros((int(rx_data_pulse.size / sps)), dtype=complex)
             #print(samples_to_use)
-            for index in range(0, int(rx_filtered_frame.size / sps)):
-                rx_data_frame[index] = rx_filtered_frame[index * sps + samples_to_use]
-            #print(rx_data_frame[: 3])
+            for index in range(0, int(rx_data_pulse.size / sps)):
+                rx_data_frame[index] = rx_data_pulse[index * sps + samples_to_use]
+            #print(rx_data_frame[: 12])
+            rx_data_frame = transceiver.rrc_filter(1, span, sps, rx_data_frame)
+            #print(rx_data_frame[: 12])
             #test_rx = estimated_channel.dot(data_frame)
             #print(test_rx[: 4])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
-            print(rx_data_frame.shape)
             detected_data_frame = detector.detect(k,
                                                   transceiver.get_symbol_list(),
                                                   estimated_channel,
