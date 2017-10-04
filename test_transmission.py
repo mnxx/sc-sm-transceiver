@@ -104,11 +104,13 @@ def main():
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             #pulse = tx_frame
+            # Apply a frequency offset.
+            #rx_frame = channel.apply_frequency_offset(pulse, sps * k, 1e5, 0)
+            rx_frame = pulse
             channel.create_ta_channel_matrix(sps, ta)
-            rx_frame = channel.apply_ta_channel_without_awgn(pulse)
+            rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
             #print(rx_frame[12 : 24])
-            rx_frame = channel.apply_frequency_offset(rx_frame, sps, 1e5, 100)
             #print(rx_frame[12 : 24])
             rn = rx_frame + channel.add_awgn(rx_frame.size)
             #rn = rx_frame
@@ -133,7 +135,7 @@ def main():
             #print(channel.add_awgn(4141).shape)
             # Shape needed for correlation is (size,).
             #print(rn[: 12])
-            #rn_split = np.reshape(rn, (sps, int(rn.size / sps)))
+            #rn_psplit = np.reshape(rn, (sps, int(rn.size / sps)))
             #rn_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
             #rn_first_split = np.reshape(rn, (setup[1], int(rx_frame.size / setup[1])), 'F')
             #rn_split = np.reshape(rn_first_split[0], (setup[1], int(rn_first_split[0].size / setup[1])), 'F')
@@ -150,6 +152,25 @@ def main():
                 y.append(transceiver.rrc_filter(1, span, sps, path_rn))
                 #y.append(rn_split[ra])
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
+
+                plt.figure()
+                mid = int(y[ra].size / 2)
+                #print(mid)
+                #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
+                #phase = np.arctan2(sc.imag, sc.real)
+                plt.plot(np.abs(y[ra]), 'm-<')
+                #plt.plot(phase, 'c-<')
+                pzone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps
+                #point = y[ra][1025] * np.conj(y[ra][pzone + 1025])
+                point = y[ra][965] * np.conj(y[ra][3013])
+                point2 = y[ra][120] * np.conj(y[ra][mid+3 + 120])
+                p_phase = np.arctan2(point.imag, point.real)
+                p_phase2 = np.arctan2(point2.imag, point2.real)
+                #print("TOPS: " + str(p_phase * 1e5 * sps / 2 / np.pi / 10))
+                print("TOPS: " + str(p_phase) + " *** " + str(p_phase2) + " --- " + str(pzone))
+                #print(np.mean(phase) / mid  * 1e5 * k * sps / 2 / np.pi)
+                print(p_phase / 2 / mid  * 1e5 * k * sps / 2 / np.pi)
+
                 y[ra] = np.correlate(y[ra], c_prime, mode='full')
                 #y[ra] = np.correlate(c_prime, y[ra], mode='same')
                 #print(y[ra][0 : 4])
@@ -163,10 +184,10 @@ def main():
                 #plt.plot(ycorr)
                 #plt.show()
 
-                plt.figure()
+                #plt.figure()
                 #plt.subplot(211)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
-                plt.plot(y[ra].real, 'c-<')
+                #plt.plot(y[ra].real, 'c-<')
                 #plt.plot(np.arctan2(y[ra].imag, y[ra].real), 'c-<')
                 #plt.plot(np.fft.fftshift(np.fft.fft(y[ra])), 'm-<')
 
@@ -196,20 +217,20 @@ def main():
                 #for index in range(0, sps):
                 #    y[ra][index] = y[ra][index][zone : zone + 10 * sps]
                 #print(y[ra][0].size)
-                plt.figure()
-                plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
+                #plt.figure()
+                #plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
                 #start = int(k / 2) - sps
                 #stop = int(k / 2) + sps
-                plt.plot(np.abs(y[ra][0][:]), 'k-<')
-                plt.plot(np.abs(y[ra][1][:]), 'b-<')
-                plt.plot(np.abs(y[ra][2][:]), 'g-<')
-                plt.plot(np.abs(y[ra][3][:]), 'r-<')
+                #plt.plot(np.abs(y[ra][0][:]), 'k-<')
+                #plt.plot(np.abs(y[ra][1][:]), 'b-<')
+                #plt.plot(np.abs(y[ra][2][:]), 'g-<')
+                #plt.plot(np.abs(y[ra][3][:]), 'r-<')
 
-                phase = np.arctan2(y[ra][0].imag, y[ra][0].real)
-                plt.figure()
-                plt.plot(phase, 'c-<')
+                #phase = np.arctan2(y[ra][0].imag, y[ra][0].real)
+                #plt.figure()
+                #plt.plot(phase, 'c-<')
                 #plt.plot(np.fft.fft(y[ra][0]), 'm-<')
-                print(str(max(phase)) + " ~~~ " + str(phase[1]))
+                #print(str(max(phase)) + " ~~~ " + str(phase[1]))
 
             #plt.figure()
             #plt.title('Poly-Crosscorrelation.')
@@ -235,7 +256,7 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        print(estimated_channel[: 8, : 2])
+        #print(estimated_channel[: 8, : 2])
         #print(estimated_channel[-8 :, : 2])
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
