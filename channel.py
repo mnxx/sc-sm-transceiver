@@ -109,9 +109,15 @@ class MIMOChannel:
         ce_channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
         return ce_channel_matrix
 
-    def apply_frequency_offset(self, signal, f_offset):
+    def apply_phase_offset(self, signal, phase_offset):
+        """ Apply a phase offset to a given signal. """
+        return signal * np.exp(1j * phase_offset)
+
+    def apply_frequency_offset(self, signal, samples_per_symbol, sample_rate, frequency_offset):
         """ Apply a frequency offset to a given signal. """
-        return signal * np.exp(1j * f_offset)
+        for index, element in enumerate(signal):
+            signal[index] = element * np.exp(1j * 2 * np.pi * frequency_offset * index / samples_per_symbol / sample_rate)
+        return signal
 
 
 class LTEChannel(MIMOChannel):

@@ -108,7 +108,7 @@ def main():
             rx_frame = channel.apply_ta_channel_without_awgn(pulse)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
             #print(rx_frame[12 : 24])
-            rx_frame = channel.apply_frequency_offset(rx_frame, 3.2)
+            rx_frame = channel.apply_frequency_offset(rx_frame, sps, 1e5, 100)
             #print(rx_frame[12 : 24])
             rn = rx_frame + channel.add_awgn(rx_frame.size)
             #rn = rx_frame
@@ -163,11 +163,12 @@ def main():
                 #plt.plot(ycorr)
                 #plt.show()
 
-                #plt.figure()
+                plt.figure()
                 #plt.subplot(211)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 1.')
-                #plt.plot(y[ra].real, 'c-<')
+                plt.plot(y[ra].real, 'c-<')
                 #plt.plot(np.arctan2(y[ra].imag, y[ra].real), 'c-<')
+                #plt.plot(np.fft.fftshift(np.fft.fft(y[ra])), 'm-<')
 
                 #plt.subplot(212)
                 #plt.title('Cross-correlation: rx after filtering - rx-antenna 2.')
@@ -207,6 +208,7 @@ def main():
                 phase = np.arctan2(y[ra][0].imag, y[ra][0].real)
                 plt.figure()
                 plt.plot(phase, 'c-<')
+                #plt.plot(np.fft.fft(y[ra][0]), 'm-<')
                 print(str(max(phase)) + " ~~~ " + str(phase[1]))
 
             #plt.figure()
