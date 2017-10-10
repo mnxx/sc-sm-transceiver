@@ -105,8 +105,8 @@ def main():
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             #pulse = tx_frame
             # Apply a frequency offset.
-            #rx_frame = channel.apply_frequency_offset(pulse, sps * k, 1e5, 0)
-            rx_frame = pulse
+            rx_frame = channel.apply_frequency_offset(pulse, 1e5, 65)
+            #rx_frame = pulse
             channel.create_ta_channel_matrix(sps, ta)
             rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
@@ -158,18 +158,23 @@ def main():
                 #print(mid)
                 #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
                 #phase = np.arctan2(sc.imag, sc.real)
-                plt.plot(np.abs(y[ra]), 'm-<')
+                plt.plot(y[ra].imag, 'm-<')
                 #plt.plot(phase, 'c-<')
                 pzone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps
                 #point = y[ra][1025] * np.conj(y[ra][pzone + 1025])
-                point = y[ra][965] * np.conj(y[ra][3013])
-                point2 = y[ra][120] * np.conj(y[ra][mid+3 + 120])
-                p_phase = np.arctan2(point.imag, point.real)
-                p_phase2 = np.arctan2(point2.imag, point2.real)
+                point = y[ra][1021] * np.conj(y[ra][3069])
+                point2 = y[ra][1021] * np.conj(y[ra][3077])
+                more_points = y[ra][100 : 1200] * np.conj(y[ra][100 + 2048 : 1200 + 2048])
+
+                p_phase = (np.pi + np.arctan2(point.imag, point.real)) / 2 / np.pi / 2
+                p_phase2 = -np.angle(point2) / 2 / np.pi
+                more_phase = np.angle(more_points)
+
                 #print("TOPS: " + str(p_phase * 1e5 * sps / 2 / np.pi / 10))
-                print("TOPS: " + str(p_phase) + " *** " + str(p_phase2) + " --- " + str(pzone))
+                print("TOPS: " + str(point) + " *** " + str(point2) + " ~ " + str(p_phase)+ " *** " + str(p_phase2) + " --- " + str(np.mean(more_phase)))
                 #print(np.mean(phase) / mid  * 1e5 * k * sps / 2 / np.pi)
-                print(p_phase / 2 / mid  * 1e5 * k * sps / 2 / np.pi)
+                #print(p_phase / 2 / mid  * 1e5 * k * sps / 2 / np.pi)
+                print(str(p_phase / (2 * k) * 1e5) + " ## " + str(p_phase2 / (2 * k) * 1e5) + " ## " + str(np.mean(more_phase) / (2 * k) * 1e5))
 
                 y[ra] = np.correlate(y[ra], c_prime, mode='full')
                 #y[ra] = np.correlate(c_prime, y[ra], mode='same')
@@ -239,7 +244,7 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            plt.show()
+            #plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.

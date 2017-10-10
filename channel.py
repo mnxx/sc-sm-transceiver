@@ -113,10 +113,10 @@ class MIMOChannel:
         """ Apply a phase offset to a given signal. """
         return signal * np.exp(1j * phase_offset)
 
-    def apply_frequency_offset(self, signal, samples, sample_rate, frequency_offset):
+    def apply_frequency_offset(self, signal, sample_rate, frequency_offset):
         """ Apply a frequency offset to a given signal. """
         for index, element in enumerate(signal):
-            signal[index] = element * np.exp(1j * 2 * np.pi * frequency_offset * index / samples / sample_rate)
+            signal[index] = element * np.exp(2j * np.pi * frequency_offset * index / sample_rate)
         return signal
 
 
