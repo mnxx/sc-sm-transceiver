@@ -157,8 +157,8 @@ def main():
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
 
                 plt.figure()
-                #mid = int(y[ra].size / 2)
-                #print(mid)
+                mid = int(y[ra].size / 2)
+                print(mid)
                 #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
                 #phase = np.arctan2(sc.imag, sc.real)
                 plt.plot(y[ra].imag, 'm-<')
@@ -167,7 +167,8 @@ def main():
                 #point = y[ra][1025] * np.conj(y[ra][pzone + 1025])
                 #point = y[ra][1021] * np.conj(y[ra][3069])
                 #point2 = y[ra][1021] * np.conj(y[ra][3077])
-                more_points = y[ra][100 : 1200] * np.conj(y[ra][100 + 2048 : 1200 + 2048])
+                more_points = y[ra][ : 1200] * np.conj(y[ra][ 2048 : 1200 + 2048])
+                #more_points = np.correlate(y[ra][: 2048], y[ra][2048 :], 'same')
                 #p_phase = (np.pi + np.arctan2(point.imag, point.real)) / 2 / np.pi / 2
                 #p_phase2 = -np.angle(point2) / 2 / np.pi
                 #x_point = np.mean(more_points)

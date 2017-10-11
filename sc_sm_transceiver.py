@@ -398,14 +398,47 @@ class ChannelEstimator:
         # Sequence should be a one-dimensional Numpy array.
         return np.roll(sequence, int(np.ceil(sequence.size / 2)))
 
-    def estimate_frequency_offset(self, sequence):
-        """ Function to estimate the frequency offset of a given signal. """
+    def estimate_frequency_offset(self, signal, sps):
+        """ Function to estimate the frequency offset for the proposed estimation scheme. """
+        mid = int(self.frame_length * sps / 2)
+        # Use the first and third quarter for the phase comparison.
+        points = signal[: int(mid / 2)] * np.conj(signal[: + mid : int(mid / 2) + mid])
+        phase_difference = -np.angle(points)
+        return (np.mean(phase_difference) * self.sample_rate / (2 * np.pi * mid))
+
+    def estimate_phase_offset(self, point):
+        """ Function to estimate the phase offset for the proposed estimation scheme. """
+        # The phase of the correlation maximum is the phase-offset.
+        return np.angle(point)
+
+    def estimate_frame(self, signal, sps):
+        """ Function to synchronize a signal in the time domain. """
+        sum_energy = []
+        for frame in range(0, sps):
+            # The signal is divided in N frames for each of the N samples per symbol.
+            sum_energy.append((np.sum(np.absolute(signal[frame][:]**2)), frame))
+        # Use the frame with the maximum energy.
+        samples_to_use = max(sum_energy)[1]
+        return samples_to_use
 
     def synchronize_frequency_offset(self, signal, frequency_offset):
-        """ Function to synchronize a sequence with a given frequency offset. """
+        """ Function to synchronize a signal with a given frequency offset. """
         for index, element in enumerate(signal):
                 signal[index] = element * np.exp(-2j * np.pi * frequency_offset * index / self.sample_rate)
         return signal
+
+    def synchronize_phase_offset(self, signal, phase_offset):
+        """ Function to synchronize a signal with a given phase offset. """
+        return signal * np.exp(-1j * phase_offset)
+
+    def synchronize(self, signal, c_prime, sps):
+        """ Concatenation of the synchronization methods. """
+        # Synchronize frequency-offset first.
+        frequency_offset = self.estimate_frequency_offset(signal, sps)
+        signal = self.synchronize_phase_offset(signal, frequency_offset)
+        # Correlate
+        signal = np.correlate(signal, c_prime, mode='full')
+        return
 
     def extract_channel(self, correlated_channel_responses):
         """ Function to estimate a channel based on a correlation representing a channel response. """
