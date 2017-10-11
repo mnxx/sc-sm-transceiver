@@ -65,11 +65,14 @@ def main():
     #m = int(sys.argv[2])
     m = 2
 
+    # Sample rate.
+    sample_rate = 1e6
+
     # Use a linear modulation scheme.
     modulation = bpsk()
 
     # Initiate the transmission: create a transmission frame.
-    transceiver = tr(setup, k, modulation.get_symbols())
+    transceiver = tr(setup, k, sample_rate, modulation.get_symbols())
 
     # Simulate the influence of a frequency-selective fading channel.
     channel = h(k, p, setup, snr)
@@ -78,7 +81,7 @@ def main():
     detector = det(setup, m)
 
     # Simulate the channel estimation.
-    channel_estimator = ce(setup, k)
+    channel_estimator = ce(setup, k, sample_rate)
 
     # LOOP FOR TESTING PURPOSES.
     rounds = 1
@@ -105,7 +108,7 @@ def main():
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             #pulse = tx_frame
             # Apply a frequency offset.
-            rx_frame = channel.apply_frequency_offset(pulse, 1e5, 65)
+            rx_frame = channel.apply_frequency_offset(pulse, sample_rate, 200)
             #rx_frame = pulse
             channel.create_ta_channel_matrix(sps, ta)
             rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
@@ -154,27 +157,36 @@ def main():
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
 
                 plt.figure()
-                mid = int(y[ra].size / 2)
+                #mid = int(y[ra].size / 2)
                 #print(mid)
                 #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
                 #phase = np.arctan2(sc.imag, sc.real)
                 plt.plot(y[ra].imag, 'm-<')
                 #plt.plot(phase, 'c-<')
-                pzone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps
+                #pzone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps
                 #point = y[ra][1025] * np.conj(y[ra][pzone + 1025])
-                point = y[ra][1021] * np.conj(y[ra][3069])
-                point2 = y[ra][1021] * np.conj(y[ra][3077])
+                #point = y[ra][1021] * np.conj(y[ra][3069])
+                #point2 = y[ra][1021] * np.conj(y[ra][3077])
                 more_points = y[ra][100 : 1200] * np.conj(y[ra][100 + 2048 : 1200 + 2048])
-
-                p_phase = (np.pi + np.arctan2(point.imag, point.real)) / 2 / np.pi / 2
-                p_phase2 = -np.angle(point2) / 2 / np.pi
-                more_phase = np.angle(more_points)
-
+                #p_phase = (np.pi + np.arctan2(point.imag, point.real)) / 2 / np.pi / 2
+                #p_phase2 = -np.angle(point2) / 2 / np.pi
+                #x_point = np.mean(more_points)
+                #print(x_point)
+                more_phase = -np.angle(more_points)
+                #x_phase = np.angle(x_point) / 2 / np.pi
+                #print(more_phase[330 : 340])
+                #print("#+* " + str(np.mean(more_phase)))
                 #print("TOPS: " + str(p_phase * 1e5 * sps / 2 / np.pi / 10))
-                print("TOPS: " + str(point) + " *** " + str(point2) + " ~ " + str(p_phase)+ " *** " + str(p_phase2) + " --- " + str(np.mean(more_phase)))
-                #print(np.mean(phase) / mid  * 1e5 * k * sps / 2 / np.pi)
+                #print("TOPS: " + str(point) + " *** " + str(point2) + " ~ " + str(p_phase)+ " *** " + str(p_phase2) + " --- " + str(np.mean(more_phase)))
+                f_off = np.mean(more_phase) / (2 * k)  * sample_rate / 2 / np.pi
+                print(f_off)
+                #print(x_phase / (2 * k) * 1e5)
                 #print(p_phase / 2 / mid  * 1e5 * k * sps / 2 / np.pi)
-                print(str(p_phase / (2 * k) * 1e5) + " ## " + str(p_phase2 / (2 * k) * 1e5) + " ## " + str(np.mean(more_phase) / (2 * k) * 1e5))
+                #print(str(p_phase / (2 * k) * 1e5) + " ## " + str(p_phase2 / (2 * k) * 1e5) + " ## " + str(np.mean(more_phase) / (2 * k) * 1e5))
+
+                # Get rid of frequency-offset.
+                for index, element in enumerate(y[ra]):
+                    y[ra][index] = element * np.exp(-2j * np.pi * f_off * index / sample_rate)
 
                 y[ra] = np.correlate(y[ra], c_prime, mode='full')
                 #y[ra] = np.correlate(c_prime, y[ra], mode='same')
@@ -244,7 +256,7 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            #plt.show()
+            plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
@@ -266,7 +278,7 @@ def main():
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
         #channel.create_channel_matrix_from_ta_vectors(sps * k + ((sps * span) - 1) / setup[0])
-        exit()
+        #exit()
         # START TRANSMITTING DATA USING THE ESTIMATED CHANNEL.
         #sps = 4
         #span = 8
@@ -308,7 +320,9 @@ def main():
                 #rn_split[ta] = rx_frame #+ channel.add_awgn(rx_frame.size)
                 #print(rx_frame.shape)
             #rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
-            rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
+            # Apply a frequency offset.
+            rx_data_pulse = channel.apply_frequency_offset(data_pulse, sample_rate, 200)
+            rx_data_pulse = channel.apply_composed_channel(sps, rx_data_pulse)
             rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             #print(rx_pulse.shape)
             #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
@@ -321,6 +335,9 @@ def main():
             #print(rx_filtered_frame[: 12])
             #print(rx_filtered_frame[0 : 4])
             #rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)
+            # Get rid of frequency-offset.
+            for index, element in enumerate(rx_data_pulse):
+                rx_data_pulse[index] = element * np.exp(-2j * np.pi * f_off * index / sample_rate)
             rx_data_frame = np.zeros((int(rx_data_pulse.size / sps)), dtype=complex)
             #print(samples_to_use)
             for index in range(0, int(rx_data_pulse.size / sps)):

@@ -37,10 +37,11 @@ class Transceiver:
     Implementation of the transmission of the scheme.
     """
 
-    def __init__(self, antenna_setup, symbols_per_frame, modulation_symbols):
+    def __init__(self, antenna_setup, symbols_per_frame, sample_rate, modulation_symbols):
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
         self.k = symbols_per_frame
+        self.sample_rate = sample_rate
         self.modulation_index = int(np.log2(len(modulation_symbols)))
         self.possible_symbols = self._create_possible_symbols(modulation_symbols)
 
@@ -164,7 +165,7 @@ class Transceiver:
 
     def rrc_filter(self, beta, span, sps, frame):
         """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
-        T_sample = 1.0 / 1e5
+        T_sample = 1.0 / self.sample_rate
         T_s = sps * T_sample
         factor = 1 / np.sqrt(T_s)
         # Length of the filter is the number of symbols  multiplied by the number of samples per symbol.
@@ -324,10 +325,11 @@ class ChannelEstimator:
     i.e. gold sequence, and subsequent correlation.
     """
 
-    def __init__(self, antenna_setup, frame_length):
+    def __init__(self, antenna_setup, frame_length, sample_rate):
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
-        self.frame_len = frame_length
+        self.frame_length = frame_length
+        self.sample_rate = sample_rate
 
     def ccorr(self, x_array, y_array):
         """ Calculate the circular correlation of 1-D input numpy arrays using DFT. """
@@ -396,6 +398,15 @@ class ChannelEstimator:
         # Sequence should be a one-dimensional Numpy array.
         return np.roll(sequence, int(np.ceil(sequence.size / 2)))
 
+    def estimate_frequency_offset(self, sequence):
+        """ Function to estimate the frequency offset of a given signal. """
+
+    def synchronize_frequency_offset(self, signal, frequency_offset):
+        """ Function to synchronize a sequence with a given frequency offset. """
+        for index, element in enumerate(signal):
+                signal[index] = element * np.exp(-2j * np.pi * frequency_offset * index / self.sample_rate)
+        return signal
+
     def extract_channel(self, correlated_channel_responses):
         """ Function to estimate a channel based on a correlation representing a channel response. """
         channel_matrix = np.array([])
@@ -428,8 +439,8 @@ class ChannelEstimator:
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             sub_matrices[_] = np.array(channel_list[_])
         # Create 4-dimensional matrix using the sub-matrices.
-        nb_rows = self.frame_len + nb_multipaths - 1
-        nb_columns = self.frame_len
+        nb_rows = self.frame_length + nb_multipaths - 1
+        nb_columns = self.frame_length
         channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                   dtype=sub_matrices[0].dtype)
         for index, sub_matrix in sub_matrices.items():
@@ -467,7 +478,7 @@ class ChannelEstimator:
         #print(nb_multipaths)
         #print(multipaths[0][: 10])
         # Vectors have to be of size ((K + P - 1) * N_r,).
-        channel_vector = np.zeros((self.n_r * (self.frame_len + nb_multipaths - 1)), dtype=complex)
+        channel_vector = np.zeros((self.n_r * (self.frame_length + nb_multipaths - 1)), dtype=complex)
         for ra in range(0, self.n_r):
             for index, val in enumerate(multipaths[ra]):
                 channel_vector[index * self.n_r + ra] = val[0]
@@ -480,13 +491,13 @@ class ChannelEstimator:
         for index, response in enumerate(correlated_channel_responses):
             while correlated_channel_responses[index].size < max_multipaths:
                 correlated_channel_responses[index] = np.concatenate((correlated_channel_responses[index], np.zeros(1)))
-        channel_matrix = np.zeros((max_multipaths, self.frame_len * len(correlated_channel_responses)), dtype=complex)
+        channel_matrix = np.zeros((max_multipaths, self.frame_length * len(correlated_channel_responses)), dtype=complex)
         # Fill first column of Block-Toeplitz-Matrix.
         for index, column in enumerate(correlated_channel_responses):
             #print(column.size)
             channel_matrix[:, index] = column
         # Fill the following columns with a rotation of the first.
-        for symbol in range(1, self.frame_len):
+        for symbol in range(1, self.frame_length):
             for index, column in enumerate(correlated_channel_responses):
                 channel_matrix[:, len(correlated_channel_responses) * symbol + index] = np.roll(column, self.n_r * symbol)
         return channel_matrix
