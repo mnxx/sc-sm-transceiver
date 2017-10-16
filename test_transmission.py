@@ -161,7 +161,8 @@ def main():
                 print(mid)
                 #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
                 #phase = np.arctan2(sc.imag, sc.real)
-                plt.plot(y[ra].imag, 'm-<')
+                plt.title('Phase of the received frame.')
+                plt.plot(-np.angle(y[ra]), 'm-<')
                 #plt.plot(phase, 'c-<')
                 #pzone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps
                 #point = y[ra][1025] * np.conj(y[ra][pzone + 1025])
@@ -235,14 +236,14 @@ def main():
                 #for index in range(0, sps):
                 #    y[ra][index] = y[ra][index][zone : zone + 10 * sps]
                 #print(y[ra][0].size)
-                #plt.figure()
-                #plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
+                plt.figure()
+                plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
                 #start = int(k / 2) - sps
                 #stop = int(k / 2) + sps
-                #plt.plot(np.abs(y[ra][0][:]), 'k-<')
-                #plt.plot(np.abs(y[ra][1][:]), 'b-<')
-                #plt.plot(np.abs(y[ra][2][:]), 'g-<')
-                #plt.plot(np.abs(y[ra][3][:]), 'r-<')
+                plt.plot(np.abs(y[ra][0][:]), 'k-<')
+                plt.plot(np.abs(y[ra][1][:]), 'b-<')
+                plt.plot(np.abs(y[ra][2][:]), 'g-<')
+                plt.plot(np.abs(y[ra][3][:]), 'r-<')
 
                 #phase = np.arctan2(y[ra][0].imag, y[ra][0].real)
                 #plt.figure()
