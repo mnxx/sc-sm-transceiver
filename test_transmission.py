@@ -288,10 +288,17 @@ def main():
         for _ in range(0, rounds):
             # Send random data for now.
             #data_frame = transceiver.transmit_frame(k, zp_len)
-            test = np.array([1, 0, 1, 0])
-            for l in range(0, 9):
-                test = np.concatenate((test, test))
-            data_frame = test
+            # Test with random data bits (ONE FRAME / PULSE SHAPING IS NEEDED FOR EACH FRAME).
+            blocks = transceiver.data_to_blocks(np.random.randint(0, 2, 2048).tolist())
+            modulated_symbols = modulation.modulate([block[1] for block in blocks])
+            pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, modulated_symbols))
+            # Add antenna information.
+            for index, block in enumerate(blocks):
+                data_pulse = upsampled_sm_symbol_creation(block[0], pulse[index * sps : index * sps + sps], sps)
+            #test = np.array([1, 0, 1, 0])
+            #for l in range(0, 9):
+            #    test = np.concatenate((test, test))
+            #data_frame = test
             #print(data_frame.shape)
             info_bits = np.ones((1024))
             up_info = transceiver.upsampling(sps, info_bits)
