@@ -54,7 +54,7 @@ def main():
     # Detect the sent frame using the M-algorithm based LSS-ML detector.
     detector = det(setup, m)
     # Simulate the channel estimation.
-    channel_estimator = ce(setup, k, sample_rate)
+    channel_estimator = ce(setup, k, sample_rate, sps)
 
     # Initiate possible offsets.
     # Frequency offset in Hz.
@@ -63,7 +63,7 @@ def main():
     # Phase offset in rad.
     phi_off = np.pi
     estimated_phi_off = 0
-    # Frame offset in samples (compare with sps).
+    # Frame offset in samples (compare with samples per symbol).
     frame_off = 0
     estimated_frame_off = 0
 
@@ -146,8 +146,7 @@ def main():
             modulated_symbols = modulation.modulate([block[1] for block in blocks])
             pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, modulated_symbols))
             # Add antenna information.
-            for index, block in enumerate(blocks):
-                data_pulse = upsampled_sm_symbol_creation(block[0], pulse[index * sps : index * sps + sps], sps)
+            data_pulse = transceiver.upsampled_sm_symbol_creation([block[0] for block in blocks], pulse, sps)
             """
             data_pulse = np.zeros(pulsed_info.size * 2, dtype=complex)
             for sample in range(0, 1024):

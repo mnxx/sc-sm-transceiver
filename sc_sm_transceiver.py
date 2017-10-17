@@ -111,6 +111,11 @@ class Transceiver:
                 break
         return [int(bit) for bit in list(format(antenna_index, 'b'))] + [modulated_symbol]
 
+    def upsampled_sm_modulation(index_information, modulated_symbols, sps):
+        """ Create Spatial Modulation symbols in an upsampled scenario. """
+        #for index, block in enumerate(blocks):
+            #data_pulse = upsampled_sm_modulation(block[0], pulse[index * sps : index * sps + sps], sps)
+
     def training_symbols_to_frames(self, training_symbols):
         """ Function to create frames from modulated training symbols. """
         training_frame = []
