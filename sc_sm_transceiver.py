@@ -325,11 +325,12 @@ class ChannelEstimator:
     i.e. gold sequence, and subsequent correlation.
     """
 
-    def __init__(self, antenna_setup, frame_length, sample_rate):
+    def __init__(self, antenna_setup, frame_length, sample_rate, samples_per_symbol):
         self.n_t = antenna_setup[0]
         self.n_r = antenna_setup[1]
         self.frame_length = frame_length
         self.sample_rate = sample_rate
+        self.sps = samples_per_symbol
 
     def ccorr(self, x_array, y_array):
         """ Calculate the circular correlation of 1-D input numpy arrays using DFT. """
@@ -398,9 +399,9 @@ class ChannelEstimator:
         # Sequence should be a one-dimensional Numpy array.
         return np.roll(sequence, int(np.ceil(sequence.size / 2)))
 
-    def estimate_frequency_offset(self, signal, sps):
+    def estimate_frequency_offset(self, signal):
         """ Function to estimate the frequency offset for the proposed estimation scheme. """
-        mid = int(self.frame_length * sps / 2)
+        mid = int(self.frame_length * self.sps / 2)
         # Use the first and third quarter for the phase comparison.
         points = signal[: int(mid / 2)] * np.conj(signal[: + mid : int(mid / 2) + mid])
         phase_difference = -np.angle(points)
@@ -411,23 +412,30 @@ class ChannelEstimator:
         # The phase of the correlation maximum is the phase-offset.
         return np.angle(point)
 
-    def estimate_frame(self, signal, sps):
+    def estimate_frame(self, signal):
         """ Function to synchronize a signal in the time domain. """
         sum_energy = []
-        for frame in range(0, sps):
+        for frame in range(0, self.sps):
             # The signal is divided in N frames for each of the N samples per symbol.
             sum_energy.append((np.sum(np.absolute(signal[frame][:]**2)), frame))
         # Use the frame with the maximum energy.
         samples_to_use = max(sum_energy)[1]
         return samples_to_use
 
-    def synchronize_frequency_offset(self, signal, frequency_offset):
+    def sync_frame_offset(self, signal, samples_to_use):
+        """ Function to synchronize a signal with a given frame offset. """
+        frame_to_use = np.zeros((int(signal.size / self.sps)), dtype=complex)
+        for index in range(0, int(signal.size / self.sps)):
+            frame_to_use[index] = signal[index * self.sps + samples_to_use]
+        return frame_to_use
+
+    def sync_frequency_offset(self, signal, frequency_offset):
         """ Function to synchronize a signal with a given frequency offset. """
         for index, element in enumerate(signal):
                 signal[index] = element * np.exp(-2j * np.pi * frequency_offset * index / self.sample_rate)
         return signal
 
-    def synchronize_phase_offset(self, signal, phase_offset):
+    def sync_phase_offset(self, signal, phase_offset):
         """ Function to synchronize a signal with a given phase offset. """
         return signal * np.exp(-1j * phase_offset)
 
