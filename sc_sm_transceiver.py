@@ -421,7 +421,7 @@ class ChannelEstimator:
         """ Function to estimate the frequency offset for the proposed estimation scheme. """
         mid = int(self.frame_length * self.sps / 2)
         # Use the first and third quarter for the phase comparison.
-        points = signal[: int(mid / 2)] * np.conj(signal[: + mid : int(mid / 2) + mid])
+        points = signal[: int(mid / 2)] * np.conj(signal[mid : int(mid / 2) + mid])
         phase_difference = -np.angle(points)
         return (np.mean(phase_difference) * self.sample_rate / (2 * np.pi * mid))
 
