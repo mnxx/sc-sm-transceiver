@@ -71,7 +71,7 @@ def main():
     rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [50]
+    steps = [90]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -97,7 +97,7 @@ def main():
             rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
             # Add AWGN to the signal.
-            rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
+            #rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
             # RECEPTION:
             y = []
             # Analyze received signal for each receive antenna.
@@ -121,11 +121,11 @@ def main():
                 y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
                 """
                 plt.figure()
-                plt.title('Polyphase-cross-correlation: RA: ' + str(ra) + ', TA: ' + str(ta))
-                plt.plot(np.abs(y[ra][0][:]), 'k-<')
-                plt.plot(np.abs(y[ra][1][:]), 'b-<')
-                plt.plot(np.abs(y[ra][2][:]), 'g-<')
-                plt.plot(np.abs(y[ra][3][:]), 'r-<')
+                plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
+                plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
+                plt.plot(np.abs(y[receive_antenna][1][:]), 'b-<')
+                plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
+                plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
                 plt.show()
                 """
             # Estimate frame using the channel impulse response with the most energy.
@@ -142,18 +142,13 @@ def main():
         for _ in range(0, rounds):
             # TRANSMISSION:
             # Test with random data bits (ONE FRAME / PULSE SHAPING IS NEEDED FOR EACH FRAME).
-            blocks = transceiver.data_to_blocks(np.random.randint(0, 2, 2048).tolist())
+            data_frame = np.random.randint(0, 2, 2048).tolist()
+            #data_frame = np.ones(2048, dtype=int).tolist()
+            blocks = transceiver.data_to_blocks(data_frame)
             modulated_symbols = modulation.modulate([block[1] for block in blocks])
-            pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, modulated_symbols))
+            pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, np.array(modulated_symbols)))
             # Add antenna information.
-            data_pulse = transceiver.upsampled_sm_symbol_creation([block[0] for block in blocks], pulse, sps)
-            """
-            data_pulse = np.zeros(pulsed_info.size * 2, dtype=complex)
-            for sample in range(0, 1024):
-                index = sample * sps
-                for _ in range(0, sps):
-                    data_pulse[index * 2 + _] = pulsed_info[index + _]
-            """
+            data_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
             # Apply a frequency offset.
             rx_data_pulse = channel.apply_frequency_offset(data_pulse, sample_rate, 200)
             # Apply fading channel.
@@ -161,29 +156,40 @@ def main():
             # Apply AWGN.
             rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             # RECEPTION:
-            # Get rid of frequency-offset.
-            rx_data_pulse = channel_estimator.sync_frequency_offset(rx_data_pulse,
-                                                                    estimated_f_off)
-            # Synchronize frames while downsampling.
-            rx_data_frame = channel_estimator.sync_frame_offset(rx_data_pulse,
-                                                                samples_to_use)
-            # TO IMPROVE: APPLY PHASE OFFSET.
-            rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
-                                                                estimated_phi_off)
-            # Matched filtering of the synchronized frame.
-            rx_data_frame = transceiver.rrc_filter(1, span, sps, rx_data_frame)
+            # Matched filtering of the synchronized frame for each receive antenna.
+            rx_data_pulse = np.reshape(rx_data_pulse, (setup[1], int(rx_data_pulse.size / setup[1])), 'F')
+            rx_data_frame = np.zeros((setup[1], int(rx_data_pulse.size / setup[1] / sps)), dtype=complex)
+            for index, pulse_on_rx_antenna in enumerate(rx_data_pulse):
+                rx_data_pulse[index] = transceiver.rrc_filter(1, span, sps, pulse_on_rx_antenna)
+                # Get rid of frequency-offset.
+                rx_data_pulse[index] = channel_estimator.sync_frequency_offset(rx_data_pulse[index],
+                                                                               estimated_f_off)
+                # Synchronize frames while downsampling.
+                rx_data_frame[index] = channel_estimator.sync_frame_offset(rx_data_pulse[index],
+                                                                           samples_to_use)
+                # TO IMPROVE: APPLY PHASE OFFSET.
+                #rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
+                #                                                    estimated_phi_off)
+            rx_data_frame = rx_data_frame.flatten('F')
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
             detected_data_frame = detector.detect(k,
                                                   transceiver.get_symbol_list(),
                                                   estimated_channel,
                                                   rx_data_frame)
-            # TO IMPROVE: DEMODULATE TO BITS.
             # Show the number of bit errors which occurred.
-            detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
-            print(str(data_frame[: 20].tolist()) + " ~ ")
-            print(str(detected_data_frame[: 20]))
+            detected_bits = []
+            for sm_symbol in detected_data_frame:
+                temp = transceiver.sm_demodulation(sm_symbol)
+                # Demodulation gives list with antenna information.
+                antenna_info = temp[: -1]
+                # Last element of the list is the linearly modulated symbol.
+                modulated_info = modulation.demodulate(temp[-1])
+                # Append demodulated bits to the result.
+                detected_bits = detected_bits + antenna_info + modulated_info
+            print(data_frame[-10 : -1])
+            print(detected_bits[-10 : -1])
             for index in range(0, k * setup[0]):
-                if data_frame[index] != detected_data_frame[index]:
+                if data_frame[index] != detected_bits[index]:
                     count += 1
         # BER calculation.
         ber = count / (k * setup[0] * rounds)

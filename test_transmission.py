@@ -67,6 +67,9 @@ def main():
 
     # Sample rate.
     sample_rate = 1e6
+    # Samples per symbol.
+    sps = 4
+    span = 8
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -81,13 +84,13 @@ def main():
     detector = det(setup, m)
 
     # Simulate the channel estimation.
-    channel_estimator = ce(setup, k, sample_rate)
+    channel_estimator = ce(setup, k, sample_rate, sps)
 
     # LOOP FOR TESTING PURPOSES.
     rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [50]
+    steps = [90]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -99,8 +102,6 @@ def main():
         channel_response_list = []
         for ta in range(0, setup[0]):
             # TRAINING TRANSMISSIONS:
-            sps = 4
-            span = 8
             c = channel_estimator.generate_zadoffchu_sequence(1, int(k / 2))
             #tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c, ta))
             tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
@@ -115,8 +116,8 @@ def main():
             #rx_frame = channel.apply_composed_channel(sps, pulse)
             #print(rx_frame[12 : 24])
             #print(rx_frame[12 : 24])
-            rn = rx_frame + channel.add_awgn(rx_frame.size)
-            #rn = rx_frame
+            #rn = rx_frame + channel.add_awgn(rx_frame.size)
+            rn = rx_frame
 
             #aka = np.ones((1))
             #aka_pulsed = transceiver.rrc_filter(1, span, sps, aka)
@@ -155,10 +156,8 @@ def main():
                 y.append(transceiver.rrc_filter(1, span, sps, path_rn))
                 #y.append(rn_split[ra])
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
-
                 plt.figure()
                 mid = int(y[ra].size / 2)
-                print(mid)
                 #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
                 #phase = np.arctan2(sc.imag, sc.real)
                 plt.title('Phase of the received frame.')
@@ -176,12 +175,11 @@ def main():
                 #print(x_point)
                 more_phase = -np.angle(more_points)
                 #x_phase = np.angle(x_point) / 2 / np.pi
-                #print(more_phase[330 : 340])
+                #print(y[ra][10 : 20])
                 #print("#+* " + str(np.mean(more_phase)))
                 #print("TOPS: " + str(p_phase * 1e5 * sps / 2 / np.pi / 10))
                 #print("TOPS: " + str(point) + " *** " + str(point2) + " ~ " + str(p_phase)+ " *** " + str(p_phase2) + " --- " + str(np.mean(more_phase)))
                 f_off = np.mean(more_phase) / (2 * k)  * sample_rate / 2 / np.pi
-                print(f_off)
                 #print(x_phase / (2 * k) * 1e5)
                 #print(p_phase / 2 / mid  * 1e5 * k * sps / 2 / np.pi)
                 #print(str(p_phase / (2 * k) * 1e5) + " ## " + str(p_phase2 / (2 * k) * 1e5) + " ## " + str(np.mean(more_phase) / (2 * k) * 1e5))
@@ -258,7 +256,7 @@ def main():
             #plt.plot(pycorr[2][999 : 1080], 'g-<')
             #plt.plot(pycorr[3][999 : 1080], 'r-<')
 
-            plt.show()
+            #plt.show()
 
             sum_energy = []
             # Find sample moment with the maximum energy.
@@ -289,16 +287,16 @@ def main():
             # Send random data for now.
             #data_frame = transceiver.transmit_frame(k, zp_len)
             # Test with random data bits (ONE FRAME / PULSE SHAPING IS NEEDED FOR EACH FRAME).
-            blocks = transceiver.data_to_blocks(np.random.randint(0, 2, 2048).tolist())
-            modulated_symbols = modulation.modulate([block[1] for block in blocks])
-            pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, modulated_symbols))
+            #data_frame = np.random.randint(0, 2, 2048).tolist()
+            #blocks = transceiver.data_to_blocks(data_frame)
+            #modulated_symbols = modulation.modulate([block[1] for block in blocks])
+            #pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, np.array(modulated_symbols)))
             # Add antenna information.
-            for index, block in enumerate(blocks):
-                data_pulse = upsampled_sm_symbol_creation(block[0], pulse[index * sps : index * sps + sps], sps)
-            #test = np.array([1, 0, 1, 0])
-            #for l in range(0, 9):
-            #    test = np.concatenate((test, test))
-            #data_frame = test
+            #data_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
+            test = np.array([1, 1, 1, 1])
+            for l in range(0, 9):
+                test = np.concatenate((test, test))
+            data_frame = test
             #print(data_frame.shape)
             info_bits = np.ones((1024))
             up_info = transceiver.upsampling(sps, info_bits)
@@ -310,7 +308,7 @@ def main():
             for sample in range(0, 1024):
                 index = sample * sps
                 for _ in range(0, sps):
-                    data_pulse[index * 2 + _] = pulsed_info[index + _]
+                    data_pulse[index * 2 + _ + sps] = pulsed_info[index + _]
             #print(data_pulse[0 : 12])
             #pulsed_info = tx_data_frame
             #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
@@ -344,15 +342,23 @@ def main():
             #print(rx_filtered_frame[: 12])
             #print(rx_filtered_frame[0 : 4])
             #rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)
-            # Get rid of frequency-offset.
-            for index, element in enumerate(rx_data_pulse):
-                rx_data_pulse[index] = element * np.exp(-2j * np.pi * f_off * index / sample_rate)
-            rx_data_frame = np.zeros((int(rx_data_pulse.size / sps)), dtype=complex)
-            #print(samples_to_use)
-            for index in range(0, int(rx_data_pulse.size / sps)):
-                rx_data_frame[index] = rx_data_pulse[index * sps + samples_to_use]
-            #print(rx_data_frame[: 12])
-            rx_data_frame = transceiver.rrc_filter(1, span, sps, rx_data_frame)
+            rx_data_pulse = np.reshape(rx_data_pulse, (setup[1], int(rx_data_pulse.size / setup[1])), 'F')
+            rx_data_frame = np.zeros((setup[1], int(rx_data_pulse.size / sps / setup[1])), dtype=complex)
+            #rx_data_frame = np.zeros((int(rx_data_pulse.size / sps)), dtype=complex)
+            for index, receive_antenna in enumerate(rx_data_pulse):
+                rx_data_pulse[index] = transceiver.rrc_filter(1, span, sps, receive_antenna)
+                # Get rid of frequency-offset.
+                for _, element in enumerate(rx_data_pulse[index]):
+                    rx_data_pulse[index][_] = element * np.exp(-2j * np.pi * f_off * _ / sample_rate)
+                #print(samples_to_use)
+                for _ in range(0, int(rx_data_pulse[index].size / sps)):
+                    rx_data_frame[index][_] = rx_data_pulse[index][_ * sps + samples_to_use]
+            rx_data_frame = rx_data_frame.flatten('F')
+            #rx_data_pulse = rx_data_pulse.flatten('F')
+            #for _ in range(0, int(rx_data_pulse.size / sps)):
+                #rx_data_frame[_] = rx_data_pulse[_ * sps + samples_to_use]
+            #print(rx_data_frame.shape)
+            #rx_data_frame = transceiver.rrc_filter(1, span, sps, rx_data_frame)
             #print(rx_data_frame[: 12])
             #test_rx = estimated_channel.dot(data_frame)
             #print(test_rx[: 4])
@@ -367,11 +373,24 @@ def main():
             #tx_frame = data_frame.flatten()
             #tx_frame = data_frame
             #print(detected_data_frame[: 10])
-            detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
-            print(str(data_frame[: 20].tolist()) + " ~ ")
-            print(str(detected_data_frame[: 20]))
+            #detected_data_frame = [symbol for sm_symbol in detected_data_frame for symbol in sm_symbol]
+            bit_list = []
+            for sm_symbol in detected_data_frame:
+                temp = transceiver.sm_demodulation(sm_symbol)
+                # Demodulation gives list with antenna information.
+                antenna_info = temp[: -1]
+                # Last element of the list is the linearly modulated symbol.
+                modulated_info = modulation.demodulate(temp[-1])
+                # Append demodulated bits to the result.
+                bit_list = bit_list + antenna_info + modulated_info
+            #print(str(data_frame[: 20].tolist()) + " ~ ")
+            #print(str(detected_data_frame[: 20]))
+            print(detected_data_frame[: 10])
+            print(data_frame[: 20].tolist())
+            print(bit_list[: 20])
             for index in range(0, k * setup[0]):
-                if data_frame[index] != detected_data_frame[index]:
+                #if data_frame[index] != detected_data_frame[index]:
+                if data_frame[index] != bit_list[index]:
                     count += 1
 
         # BER calculation: Take combining gain into account, i.e. multiply by N_r.
