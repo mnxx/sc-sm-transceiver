@@ -28,6 +28,21 @@ class Modulation:
         """ Return the corresponding modulation index of the modulation. """
         return self._index
 
+    def modulate(self, blocks):
+        """ Abstract modulation method. """
+        raise NotImplementedError("Method implemented by specific linear modulation.")
+
+    def demodulate(self, symbol):
+        """ Abstract demodulation method. """
+        raise NotImplementedError("Method implemented by specific linear modulation.")
+
+    def demodulate_list(self, symbols):
+        """ Demodulate blocks of symbols to bits. """
+        bit_list = []
+        for symbol in symbols:
+            bit_list = bit_list + self.demodulate(symbol)
+        return bit_list
+
 
 class BPSK(Modulation):
     """ Implementation of the BPSK modulation scheme. """
@@ -38,28 +53,29 @@ class BPSK(Modulation):
 
     def modulate(self, blocks):
         """ Modulate blocks of bits to symbols. """
-        for index, block in enumerate(blocks):
-            if block == [0]:
-                blocks[index] = -1
-            else:
-                blocks[index] = 1
+        try:
+            for index, block in enumerate(blocks):
+                if block == [0]:
+                    blocks[index] = -1
+                elif block == [1]:
+                    blocks[index] = 1
+                else:
+                    raise Exception
+        except Exception:
+            print("Block did not match bit criteria: " + str(block))
         return blocks
 
     def demodulate(self, symbol):
         """ Demodulate symbol to bits. """
-        if symbol == -1:
-            return 0
-        else:
-            return 1
-
-    def demodulate_list(self, symbols):
-        """ Demodulate blocks of symbols to bits. """
-        for index, symbol in enumerate(symbols):
-            if symbol == [-1]:
-                symbols[index] = 0
+        try:
+            if symbol == -1:
+                return [0]
+            elif symbol == 1:
+                return [1]
             else:
-                symbols[index] = 1
-        return symbols
+                raise Exception
+        except Exception:
+            print("Symbol did not match BPSK-symbol criteria: " + str(symbol))
 
 
 class QPSK(Modulation):
@@ -104,9 +120,3 @@ class QPSK(Modulation):
         except Exception:
             print("Symbol did not match QPSK-symbol criteria: " + str(symbol))
 
-    def demodulate_list(self, symbols):
-        """ Demodulate blocks of symbols to bits. """
-        bit_list = []
-        for symbol in symbols:
-            bit_list.append(self.demodulate(symbol))
-        return bit_list
