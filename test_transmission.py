@@ -175,8 +175,8 @@ def main():
                 mid = int(y[ra].size / 2)
                 #sc = np.correlate(y[ra][: mid], y[ra][mid :], 'full')
                 #phase = np.arctan2(sc.imag, sc.real)
-                plt.title('Phase of the received frame.')
-                plt.plot(-np.angle(y[ra]), 'm-<')
+                #plt.title('Phase of the received frame.')
+                #plt.plot(-np.angle(y[ra]), 'm-<')
                 #plt.plot(phase, 'c-<')
                 #pzone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps
                 #point = y[ra][1025] * np.conj(y[ra][pzone + 1025])
@@ -214,7 +214,7 @@ def main():
                 #plt.title('Crosscorrelation: rx after filtering.')
                 #plt.plot(c_prime)
                 #plt.plot(ycorr)
-                plt.show()
+                #plt.show()
 
                 #plt.figure()
                 #plt.subplot(211)
@@ -288,7 +288,7 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        print(estimated_channel[: 8, : 2])
+        #print(estimated_channel[: 8, : 2])
         #print(estimated_channel[-8 :, : 2])
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
@@ -325,7 +325,7 @@ def main():
                 index = sample * sps
                 for _ in range(0, sps):
                     data_pulse[index * 2 + _ + sps] = pulsed_info[index + _]
-            print("********** " + str(data_pulse[0 : 13]))
+            #print("********** " + str(data_pulse[0 : 13]))
             #pulsed_info = tx_data_frame
             #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
             #print(pulsed_info[: 4])
@@ -372,7 +372,7 @@ def main():
             rx_data_frame = np.zeros((setup[1], int(rx_data_pulse.size / sps / setup[1])), dtype=complex)
             #rx_data_frame = np.zeros((int(rx_data_pulse.size / sps)), dtype=complex)
             for index, receive_antenna in enumerate(rx_data_pulse_list):
-                rx_data_pulse_list[index] = transceiver.rrc_filter(1, span, sps, receive_antenna)
+                #rx_data_pulse_list[index] = transceiver.rrc_filter(1, span, sps, receive_antenna)
                 # Get rid of frequency-offset.
                 #for _, element in enumerate(rx_data_pulse[index]):
                 #    rx_data_pulse[index][_] = element * np.exp(-2j * np.pi * f_off * _ / sample_rate)
@@ -380,7 +380,9 @@ def main():
                 for _ in range(0, int(rx_data_pulse_list[index].size / sps)):
                     rx_data_frame[index][_] = rx_data_pulse_list[index][_ * sps + samples_to_use]
                 #print("********** " + str(rx_data_frame[index][0 : 4]))
+                rx_data_frame[index] = transceiver.rrc_filter(1, span, sps, rx_data_frame[index])
             rx_data_frame = rx_data_frame.flatten('F')
+            print(rx_data_frame[: 12])
             #rx_data_pulse = rx_data_pulse.flatten('F')
             #for _ in range(0, int(rx_data_pulse.size / sps)):
                 #rx_data_frame[_] = rx_data_pulse[_ * sps + samples_to_use]

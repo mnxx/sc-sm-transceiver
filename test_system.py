@@ -89,8 +89,10 @@ def main():
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             # Pulse shape the training frame using an RRC-Filter.
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
+            #pulse = tx_frame
             # Apply a frequency offset.
-            rx_frame = channel.apply_frequency_offset(pulse, sample_rate, f_off)
+            #rx_frame = channel.apply_frequency_offset(pulse, sample_rate, f_off)
+            rx_frame = pulse
             # TO IMPROVE:
             # Create and apply channel matrix for this transmit antenna.
             channel.create_ta_channel_matrix(sps, transmit_antenna)
@@ -109,14 +111,16 @@ def main():
                     path[index * sps : index * sps + sps] = rx_frame[position : position + sps]
                 # Matched filtering of the path from a transmit antenna to a receive antenna.
                 y.append(transceiver.rrc_filter(1, span, sps, path))
+                #y.append(path)
                 # Estimate the frequency offset.
-                estimated_f_off = channel_estimator.estimate_frequency_offset(y[receive_antenna])
+                #estimated_f_off = channel_estimator.estimate_frequency_offset(y[receive_antenna])
+                #print(estimated_f_off)
                 # Get rid of frequency-offset.
-                y[receive_antenna] = channel_estimator.sync_frequency_offset(y[receive_antenna],
-                                                                             estimated_f_off)
+                #y[receive_antenna] = channel_estimator.sync_frequency_offset(y[receive_antenna],
+                #                                                             estimated_f_off)
                 # Analyze the channel impulse response for the particular path by correlation.
                 y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
-                zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - sps - 2
+                zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 4 * sps +1
                 y[receive_antenna] = y[receive_antenna][zone : zone + 10 * sps]
                 y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
                 """
@@ -132,7 +136,8 @@ def main():
             # TO IMPROVE: USE THE BEST OVERALL CHOICE.
             samples_to_use = channel_estimator.estimate_frame(y[0])
             # TO IMPROVE: CALCULATE STRONGEST PATH.
-            strongest_path = 200
+            #strongest_path = 200
+            strongest_path = 500
             channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use, strongest_path))
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
@@ -143,16 +148,18 @@ def main():
             # TRANSMISSION:
             # Test with random data bits (ONE FRAME / PULSE SHAPING IS NEEDED FOR EACH FRAME).
             data_frame = np.random.randint(0, 2, 2048).tolist()
+            #data_frame = [1, 1, 1, 1] * 512
             #data_frame = np.ones(2048, dtype=int).tolist()
             blocks = transceiver.data_to_blocks(data_frame)
             modulated_symbols = modulation.modulate([block[1] for block in blocks])
             pulse = transceiver.rrc_filter(1, span, sps, transceiver.upsampling(sps, np.array(modulated_symbols)))
-            # Add antenna information.
+            #pulse = transceiver.upsampling(sps, np.array(modulated_symbols))
+            # Apply a frequency offset on pulse.
+            #pulse = channel.apply_frequency_offset(pulse, sample_rate, 200)
+            # Add antenna information for channel simulation.
             data_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
-            # Apply a frequency offset.
-            rx_data_pulse = channel.apply_frequency_offset(data_pulse, sample_rate, 200)
             # Apply fading channel.
-            rx_data_pulse = channel.apply_composed_channel(sps, rx_data_pulse)
+            rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
             # Apply AWGN.
             rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             # RECEPTION:
@@ -164,16 +171,19 @@ def main():
                 for index in range(0, int(data_path.size / sps)):
                     position = (index * setup[1] + receive_antenna) * sps
                     data_path[index * sps : index * sps + sps] = rx_data_pulse[position : position + sps]
-                # Matched filtering of the synchronized frame for each receive antenna.
-                data_path = transceiver.rrc_filter(1, span, sps, data_path)
+                #data_path = transceiver.rrc_filter(1, span, sps, data_path)
                 # Get rid of frequency-offset.
-                data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
+                #data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
                 # Synchronize frames while downsampling.
                 rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, samples_to_use)
                 # TO IMPROVE: APPLY PHASE OFFSET.
                 #rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
                 #                                                    estimated_phi_off)
+                # Matched filtering of the synchronized frame for each receive antenna.
+                rx_data_frame[receive_antenna] = transceiver.rrc_filter(1, span, sps,
+                                                                        rx_data_frame[receive_antenna])
             rx_data_frame = rx_data_frame.flatten('F')
+            print(rx_data_frame[: 12])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
             detected_data_frame = detector.detect(k,
                                                   transceiver.get_symbol_list(),
