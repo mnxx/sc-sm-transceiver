@@ -171,7 +171,8 @@ def main():
                 for index in range(0, int(data_path.size / sps)):
                     position = (index * setup[1] + receive_antenna) * sps
                     data_path[index * sps : index * sps + sps] = rx_data_pulse[position : position + sps]
-                #data_path = transceiver.rrc_filter(1, span, sps, data_path)
+                # Matched filtering of the synchronized frame for each receive antenna.
+                data_path = transceiver.rrc_filter(1, span, sps, data_path)
                 # Get rid of frequency-offset.
                 #data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
                 # Synchronize frames while downsampling.
@@ -179,9 +180,6 @@ def main():
                 # TO IMPROVE: APPLY PHASE OFFSET.
                 #rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
                 #                                                    estimated_phi_off)
-                # Matched filtering of the synchronized frame for each receive antenna.
-                rx_data_frame[receive_antenna] = transceiver.rrc_filter(1, span, sps,
-                                                                        rx_data_frame[receive_antenna])
             rx_data_frame = rx_data_frame.flatten('F')
             print(rx_data_frame[: 12])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
