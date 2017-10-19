@@ -66,7 +66,11 @@ class Transceiver:
 
     def bits_to_index(self, bits):
         """ Return the decimal value of a series of bits. """
-        return
+        index = 0
+        for bit in bits:
+            # Convert list of bits into integer by bitshifting.
+            index = (index << 1) | bit
+        return index
 
     def training_data_to_blocks(self, training_sequences):
         """ Create a training vector by modulating the data bits to modulation symbols. """
@@ -116,10 +120,8 @@ class Transceiver:
         transmit_frame = np.zeros(self.n_t * self.k * sps, dtype=complex)
         step_size = self.n_t * sps
         for index, block in enumerate(blocks):
-            # Convert list of bits into integer by bitshifting.
-            antenna_info = 0
-            for bit in block[0]:
-                antenna_info = (antenna_info << 1) | bit
+            # Convert list of bits into integer.
+            antenna_info = self.bits_to_index(block[0])
             # Use SM symbol creation algorithm. Keep convention: Antenna indices start with 1.
             antenna_index = antenna_info + 1
             upsampled_sm_symbol = np.concatenate((np.zeros(sps * (antenna_index - 1)),
