@@ -156,17 +156,20 @@ def main():
             # Apply AWGN.
             rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             # RECEPTION:
-            # Matched filtering of the synchronized frame for each receive antenna.
-            rx_data_pulse = np.reshape(rx_data_pulse, (setup[1], int(rx_data_pulse.size / setup[1])), 'F')
+            # Split into receive antennas.
             rx_data_frame = np.zeros((setup[1], int(rx_data_pulse.size / setup[1] / sps)), dtype=complex)
-            for index, pulse_on_rx_antenna in enumerate(rx_data_pulse):
-                rx_data_pulse[index] = transceiver.rrc_filter(1, span, sps, pulse_on_rx_antenna)
+            # Synchronization and downsampling for each receive antenna.
+            for receive_antenna in range(0, setup[1]):
+                data_path = np.zeros((int(rx_data_pulse.size / setup[1])), dtype=complex)
+                for index in range(0, int(data_path.size / sps)):
+                    position = (index * setup[1] + receive_antenna) * sps
+                    data_path[index * sps : index * sps + sps] = rx_data_pulse[position : position + sps]
+                # Matched filtering of the synchronized frame for each receive antenna.
+                data_path = transceiver.rrc_filter(1, span, sps, data_path)
                 # Get rid of frequency-offset.
-                rx_data_pulse[index] = channel_estimator.sync_frequency_offset(rx_data_pulse[index],
-                                                                               estimated_f_off)
+                data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
                 # Synchronize frames while downsampling.
-                rx_data_frame[index] = channel_estimator.sync_frame_offset(rx_data_pulse[index],
-                                                                           samples_to_use)
+                rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, samples_to_use)
                 # TO IMPROVE: APPLY PHASE OFFSET.
                 #rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
                 #                                                    estimated_phi_off)

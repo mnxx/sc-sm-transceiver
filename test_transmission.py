@@ -63,7 +63,7 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 2
+    m = 4
 
     # Sample rate.
     sample_rate = 1e6
@@ -105,15 +105,29 @@ def main():
             c = channel_estimator.generate_zadoffchu_sequence(1, int(k / 2))
             #tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c, ta))
             tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
+            #tx_frame = channel_estimator.create_flc_frame(c)
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
             #pulse = tx_frame
+            #pulse = transceiver.upsampling(sps, tx_pulse)
+            if ta == 0:
+                blocks = [[[0], 1]] * k
+                training_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
+            elif ta == 1:
+                blocks = [[[1], 1]] * k
+                training_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
+            else:
+                print("Something went wrong.")
+            #print(training_pulse[: 16])
+
+            #pulse = tx_frame
             # Apply a frequency offset.
-            rx_frame = channel.apply_frequency_offset(pulse, sample_rate, 200)
-            #rx_frame = pulse
-            channel.create_ta_channel_matrix(sps, ta)
-            rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
-            #rx_frame = channel.apply_composed_channel(sps, pulse)
+            #rx_frame = channel.apply_frequency_offset(pulse, sample_rate, 0)
+
+            #rx_frame = channel.create_ta_channel_matrix(sps, ta)
+            #rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
+            rx_frame = channel.apply_composed_channel(sps, training_pulse)
+            #print(rx_frame[: 16])
             #print(rx_frame[12 : 24])
             #print(rx_frame[12 : 24])
             #rn = rx_frame + channel.add_awgn(rx_frame.size)
@@ -153,8 +167,9 @@ def main():
                 for index in range(0, int(path_rn.size / sps)):
                     position = (index * setup[1] + ra) * sps
                     path_rn[index * sps : index * sps + sps] = rn[position : position + sps]
+                #print("#### : " + str(path_rn[: 12]))
                 y.append(transceiver.rrc_filter(1, span, sps, path_rn))
-                #y.append(rn_split[ra])
+                #y.append(path_rn)
                 #y = transceiver.rrc_filter(1, 8, 4, rn)
                 plt.figure()
                 mid = int(y[ra].size / 2)
@@ -183,10 +198,10 @@ def main():
                 #print(x_phase / (2 * k) * 1e5)
                 #print(p_phase / 2 / mid  * 1e5 * k * sps / 2 / np.pi)
                 #print(str(p_phase / (2 * k) * 1e5) + " ## " + str(p_phase2 / (2 * k) * 1e5) + " ## " + str(np.mean(more_phase) / (2 * k) * 1e5))
-
+                #print(f_off)
                 # Get rid of frequency-offset.
-                for index, element in enumerate(y[ra]):
-                    y[ra][index] = element * np.exp(-2j * np.pi * f_off * index / sample_rate)
+                #for index, element in enumerate(y[ra]):
+                #    y[ra][index] = element * np.exp(-2j * np.pi * f_off * index / sample_rate)
 
                 y[ra] = np.correlate(y[ra], c_prime, mode='full')
                 #y[ra] = np.correlate(c_prime, y[ra], mode='same')
@@ -199,7 +214,7 @@ def main():
                 #plt.title('Crosscorrelation: rx after filtering.')
                 #plt.plot(c_prime)
                 #plt.plot(ycorr)
-                #plt.show()
+                plt.show()
 
                 #plt.figure()
                 #plt.subplot(211)
@@ -227,7 +242,7 @@ def main():
                 #y[ra] = y[ra][zone : zone + 20]
                 #y[ra] = y[ra][zone - sps - 1 : zone + 100]
                 #y[ra] = y[ra][1000 : 1040]
-                zone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - sps - 2
+                zone =int((y[ra].size - np.mod(y[ra].size, sps)) / 2) - 2 * sps + 2
                 y[ra] = y[ra][zone : zone + 10 * sps]
                 y[ra] = np.reshape(y[ra], (sps, int(y[ra].size / sps)), 'F')
                 #zone = int(int(samples_len / sps) / 2)
@@ -273,7 +288,7 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        #print(estimated_channel[: 8, : 2])
+        print(estimated_channel[: 8, : 2])
         #print(estimated_channel[-8 :, : 2])
         #print(estimated_channel.shape)
         # Recreate the channel matrix influencing the transmission.
@@ -303,13 +318,14 @@ def main():
             #tx_data_frame = transceiver.upsampling(sps, data_frame)
             #pulsed_info = transceiver.rrc_filter(1, span, sps, tx_data_frame)
             pulsed_info = transceiver.rrc_filter(1, span, sps, up_info)
+            #pulsed_info = up_info
             # ADD ANTENNA INFORMATION.
             data_pulse = np.zeros(pulsed_info.size * 2, dtype=complex)
             for sample in range(0, 1024):
                 index = sample * sps
                 for _ in range(0, sps):
                     data_pulse[index * 2 + _ + sps] = pulsed_info[index + _]
-            #print(data_pulse[0 : 12])
+            print("********** " + str(data_pulse[0 : 13]))
             #pulsed_info = tx_data_frame
             #data_frame_split = np.reshape(data_frame, (setup[0], int(data_frame.size / setup[0])), 'F')
             #print(pulsed_info[: 4])
@@ -328,9 +344,10 @@ def main():
                 #print(rx_frame.shape)
             #rx_data_pulse = channel.apply_composed_channel(sps, pulsed_info)
             # Apply a frequency offset.
-            rx_data_pulse = channel.apply_frequency_offset(data_pulse, sample_rate, 200)
-            rx_data_pulse = channel.apply_composed_channel(sps, rx_data_pulse)
-            rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
+            #rx_data_pulse = channel.apply_frequency_offset(data_pulse, sample_rate, 0)
+            #rx_data_pulse = channel.apply_composed_channel(sps, rx_data_pulse)
+            rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
+            #rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             #print(rx_pulse.shape)
             #rx_pulse = np.reshape(rx_pulse, (2, int(rx_pulse.size / 2)), 'F')
             #rx_pulse[0] = transceiver.rrc_filter(1, span, sps, rx_pulse[0])
@@ -342,17 +359,27 @@ def main():
             #print(rx_filtered_frame[: 12])
             #print(rx_filtered_frame[0 : 4])
             #rx_data_frame = np.zeros((int(rx_filtered_frame.size / sps)), dtype=complex)
-            rx_data_pulse = np.reshape(rx_data_pulse, (setup[1], int(rx_data_pulse.size / setup[1])), 'F')
+            rx_data_pulse_list = []
+            for ra in range(0, setup[1]):
+                data_path = np.zeros((int(rx_data_pulse.size / setup[1])), dtype=complex)
+                for index in range(0, int(data_path.size / sps)):
+                    position = (index * setup[1] + ra) * sps
+                    data_path[index * sps : index * sps + sps] = rx_data_pulse[position : position + sps]
+                rx_data_pulse_list.append(data_path)
+            #rx_data_pulse = np.reshape(rx_data_pulse, (setup[1], int(rx_data_pulse.size / setup[1])), 'F')
+            #print("+++++++++ " + str(rx_data_pulse_list[0][0 : 4]))
+            #print("+++++++++ " + str(rx_data_pulse_list[1][0 : 4]))
             rx_data_frame = np.zeros((setup[1], int(rx_data_pulse.size / sps / setup[1])), dtype=complex)
             #rx_data_frame = np.zeros((int(rx_data_pulse.size / sps)), dtype=complex)
-            for index, receive_antenna in enumerate(rx_data_pulse):
-                rx_data_pulse[index] = transceiver.rrc_filter(1, span, sps, receive_antenna)
+            for index, receive_antenna in enumerate(rx_data_pulse_list):
+                rx_data_pulse_list[index] = transceiver.rrc_filter(1, span, sps, receive_antenna)
                 # Get rid of frequency-offset.
-                for _, element in enumerate(rx_data_pulse[index]):
-                    rx_data_pulse[index][_] = element * np.exp(-2j * np.pi * f_off * _ / sample_rate)
+                #for _, element in enumerate(rx_data_pulse[index]):
+                #    rx_data_pulse[index][_] = element * np.exp(-2j * np.pi * f_off * _ / sample_rate)
                 #print(samples_to_use)
-                for _ in range(0, int(rx_data_pulse[index].size / sps)):
-                    rx_data_frame[index][_] = rx_data_pulse[index][_ * sps + samples_to_use]
+                for _ in range(0, int(rx_data_pulse_list[index].size / sps)):
+                    rx_data_frame[index][_] = rx_data_pulse_list[index][_ * sps + samples_to_use]
+                #print("********** " + str(rx_data_frame[index][0 : 4]))
             rx_data_frame = rx_data_frame.flatten('F')
             #rx_data_pulse = rx_data_pulse.flatten('F')
             #for _ in range(0, int(rx_data_pulse.size / sps)):
