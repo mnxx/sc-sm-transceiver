@@ -68,10 +68,11 @@ def main():
     estimated_frame_off = 0
 
     # Loops.
-    rounds = 1
+    rounds = 10
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [90]
+    steps = [14, 16, 18, 20]
+    #steps = [90]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -99,7 +100,7 @@ def main():
             rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
             #rx_frame = channel.apply_composed_channel(sps, pulse)
             # Add AWGN to the signal.
-            #rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
+            rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
             # RECEPTION:
             y = []
             # Analyze received signal for each receive antenna.
@@ -120,10 +121,10 @@ def main():
                 #                                                             estimated_f_off)
                 # Analyze the channel impulse response for the particular path by correlation.
                 y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
-                zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 4 * sps +1
+                zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 4 * sps +2
                 y[receive_antenna] = y[receive_antenna][zone : zone + 10 * sps]
                 y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
-                """
+                #"""
                 plt.figure()
                 plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
                 plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
@@ -131,7 +132,7 @@ def main():
                 plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
                 plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
                 plt.show()
-                """
+                #"""
             # Estimate frame using the channel impulse response with the most energy.
             # TO IMPROVE: USE THE BEST OVERALL CHOICE.
             samples_to_use = channel_estimator.estimate_frame(y[0])
@@ -176,12 +177,13 @@ def main():
                 # Get rid of frequency-offset.
                 #data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
                 # Synchronize frames while downsampling.
-                rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, samples_to_use)
+                #print(data_path[:20])
+                rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, 1)#samples_to_use)
                 # TO IMPROVE: APPLY PHASE OFFSET.
                 #rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
                 #                                                    estimated_phi_off)
             rx_data_frame = rx_data_frame.flatten('F')
-            print(rx_data_frame[: 12])
+            #print(rx_data_frame[: 12])
             # Detect the sent frame using the M-algorithm based LSS-ML detector.
             detected_data_frame = detector.detect(k,
                                                   transceiver.get_symbol_list(),
@@ -197,8 +199,8 @@ def main():
                 modulated_info = modulation.demodulate(temp[-1])
                 # Append demodulated bits to the result.
                 detected_bits = detected_bits + antenna_info + modulated_info
-            print(data_frame[-10 : -1])
-            print(detected_bits[-10 : -1])
+            #print(data_frame[-10 : -1])
+            #print(detected_bits[-10 : -1])
             for index in range(0, k * setup[0]):
                 if data_frame[index] != detected_bits[index]:
                     count += 1

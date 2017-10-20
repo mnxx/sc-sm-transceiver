@@ -321,16 +321,16 @@ class LSSDetector:
         # Final detection: Find the frame with the overall minimum metric of the M estimated frames.
         # This time the metric is calculated by a maximum likelihood detection.
         final_metric_list = []
-        print(D[0][-3 :])
-        print(D[1][-3 :])
-        print(e[:2])
+        #print(D[0][-3 :])
+        #print(D[1][-3 :])
+        #print(e[:2])
         for index, estimated_symbols in enumerate(D):
             #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
             symbols = np.reshape(estimated_symbols, (self.n_t * frame_len))
             final_metric = ((np.linalg.norm(rx_vector - channel.dot(symbols))**2), index)
             final_metric_list.append(final_metric)
         final_metric_list.sort()
-        print(final_metric_list)
+        #print(final_metric_list)
         best_m = final_metric_list[0][1]
         # Return the Vector of the K * N_t symbols with the best overall metrics.
         return D[best_m]
