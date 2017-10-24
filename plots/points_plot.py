@@ -37,10 +37,14 @@ points2x2_2_ce = [0.00015, 5e-05, 2.5e-05, 2.5e-05, 0.000125, 0.000125, 7.5e-05,
 points2x2_2 = [0.111095, 0.05419375, 0.02167125, 0.00706625, 0.001975, 0.0004925, 8.25e-05, 7.5e-06, 0.0, 0.0, 0.0]
 #[0.2244675, 0.108935, 0.0427425, 0.013775, 0.003555, 0.0007975, 0.00019, 3.95e-05, 7e-06, 0.0, 0.0]
 gp_2 = [0.14705875, 0.07981875, 0.0358475, 0.012775, 0.00368875, 0.001025, 0.00027625, 3.5e-05, 1e-05, 0.0, 0.0]
+new_points2x2_2 = []
+new_points2x2_2_1024 = [0.1958544921875, 0.1413330078125, 0.136201171875, 0.177373046875, 0.004853515625, 0.0014404296875, 6.8359375e-05, 0.0051513671875, 4.39453125e-05, 0.0, 0.0]
 
 points2x2_4 = [0.0503625, 0.0167825, 0.00410625, 0.00059375, 9.125e-05, 2.5e-06, 2.5e-06, 0.0, 0.0, 0.0, 0.0]
 #[0.10201, 0.0341025, 0.00795, 0.0014675, 0.0002125, 1.3e-05, 0.0, 0.0, 0.0, 0.0, 0.0]
 gp_4 = [0.0788675, 0.0303975, 0.00855875, 0.00169375, 0.00024375, 4e-05, 5e-06, 0.0, 0.0, 0.0, 0.0]
+#new_points2x2_4 = [0.00991375, 0.0066175, 0.00043125, 5e-06, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # No -3dB/ra
+new_points2x2_4 = [0.07915, 0.030805, 0.011405, 0.000162125, 2.5e-06, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 # BER is measured for the following SNRs.
 steps = np.arange(0, 22, 2)
@@ -51,7 +55,6 @@ plt.figure(1)
 #plt.plot(steps, points2x1_4, 'b-o', label='LSS, M=4')
 plt.subplot(121)
 plt.title('2x1')
-plt.plot(steps, points2x1_2_ce, 'k-<', label='LSS, M=2, CE=27dB')
 plt.plot(steps, points2x1_2, 'r-<', label='LSS, M=2')
 plt.plot(steps, points2x1_4, 'b-o', label='LSS, M=4')
 plt.axis([0, 20, 0.00001, 1])
@@ -61,11 +64,12 @@ plt.yscale('log')
 plt.legend()
 plt.subplot(122)
 plt.title('2x2')
-plt.plot(steps, points2x2_2_ce, 'k-<', label='LSS, M=2, CE=17dB')
 plt.plot(steps, gp_2, 'k-')
 plt.plot(steps, points2x2_2, 'r-<', label='LSS, M=2')
+plt.plot(steps, new_points2x2_2_1024, 'm-<', label='LSS, M=2, K=1024')
 plt.plot(steps, gp_4, 'g-')
 plt.plot(steps, points2x2_4, 'b-o', label='LSS, M=4')
+plt.plot(steps, new_points2x2_4, 'c-o', label='LSS, M=4')
 plt.axis([0, 20, 0.00001, 1])
 plt.xlabel('SNR / dB')
 plt.yscale('log')
