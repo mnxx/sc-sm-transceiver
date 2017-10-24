@@ -10,6 +10,7 @@
 """ Test of the complete implementation of the transmission scheme. """
 
 
+import sys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,9 +25,13 @@ def main():
     """ Main function. """
     # Initiate constants used in the transmission.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    setup = (2, 2)
+    n_r = int(sys.argv[1])
+    print("***** N_r = " + str(n_r))
+    setup = (2, n_r)
     # Frame length of the transmission - K symbols for each transmission.
-    k = 1024
+    #k = 1024
+    k = int(sys.argv[2])
+    print("***** K = " + str(k))
     # Number of multipath links.
     p = 3
     # Length of the Zero-Prefix.
@@ -36,7 +41,9 @@ def main():
     snr = 0
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
-    m = 2
+    #m = 4
+    m = int(sys.argv[3])
+    print("***** M = " + str(m))
     # Sample rate.
     sample_rate = 1e6
     # Samples per symbol.
@@ -58,7 +65,7 @@ def main():
 
     # Initiate possible offsets.
     # Frequency offset in Hz.
-    f_off = 200
+    f_off = 100
     estimated_f_off = 0
     # Phase offset in rad.
     phi_off = np.pi
@@ -68,17 +75,18 @@ def main():
     estimated_frame_off = 0
 
     # Loops.
-    rounds = 10
+    rounds = 100
     # BER is measured for the following SNRs.
+    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [14, 16, 18, 20]
-    #steps = [90]
+    #steps = [26]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
         start = time.time()
         count = 0
-        channel.set_snr(step)
+        # Adapt for diversity gain of 3 dB for each additional receive antenna.
+        channel.set_snr(step - 3 * (setup[1] - 1))
         # TRAINING PHASE:
         channel_response_list = []
         for transmit_antenna in range(0, setup[0]):
@@ -124,7 +132,7 @@ def main():
                 zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 4 * sps +2
                 y[receive_antenna] = y[receive_antenna][zone : zone + 10 * sps]
                 y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
-                #"""
+                """
                 plt.figure()
                 plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
                 plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
@@ -132,7 +140,7 @@ def main():
                 plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
                 plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
                 plt.show()
-                #"""
+                """
             # Estimate frame using the channel impulse response with the most energy.
             # TO IMPROVE: USE THE BEST OVERALL CHOICE.
             samples_to_use = channel_estimator.estimate_frame(y[0])
@@ -143,6 +151,7 @@ def main():
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
+        #print(estimated_channel.shape)
 
         # DATA TRANSMISSION PHASE:
         for _ in range(0, rounds):
