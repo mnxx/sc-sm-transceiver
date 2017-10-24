@@ -343,7 +343,9 @@ class LSSDetector:
         for index, estimated_symbols in enumerate(D):
             #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
             symbols = np.reshape(estimated_symbols, (self.n_t * frame_len))
-            final_metric = ((np.linalg.norm(rx_vector - channel.dot(symbols))**2), index)
+            # Estimated channel might possess more or less multi-paths than actual channel.
+            final_metric = ((np.linalg.norm(rx_vector[: channel.shape[0]]
+                                            - channel[: rx_vector.size].dot(symbols))**2), index)
             final_metric_list.append(final_metric)
         final_metric_list.sort()
         #print(final_metric_list)
