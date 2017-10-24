@@ -115,6 +115,22 @@ class Transceiver:
                 break
         return [int(bit) for bit in list(format(antenna_index, 'b'))] + [modulated_symbol]
 
+    def frame_sm_modulation(self, blocks, modulated_symbols):
+        """ Create Spatial Modulation symbols in a symbol tact scenario. """
+        transmit_frame = np.zeros(self.n_t * self.k, dtype=complex)
+        step_size = self.n_t
+        for index, block in enumerate(blocks):
+            # Convert list of bits into integer.
+            antenna_info = self.bits_to_index(block[0])
+            # Use SM symbol creation algorithm. Keep convention: Antenna indices start with 1.
+            antenna_index = antenna_info + 1
+            sm_symbol = np.concatenate((np.zeros(antenna_index - 1),
+                                        np.array([modulated_symbols[index]])))
+            sm_symbol = np.concatenate((sm_symbol,
+                                        np.zeros(self.n_t - antenna_index)))
+            transmit_frame[index * step_size : index * step_size + step_size] = sm_symbol
+        return transmit_frame
+
     def upsampled_sm_modulation(self, blocks, modulated_symbols, sps):
         """ Create Spatial Modulation symbols in an upsampled scenario. """
         transmit_frame = np.zeros(self.n_t * self.k * sps, dtype=complex)
