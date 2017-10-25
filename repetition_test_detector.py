@@ -21,35 +21,35 @@ import subprocess
 start = time.time()
 
 # Test detector: 2x1, K=4, M=2.
-subprocess.check_call(["python3", "test_scheme.py", "1", "4", "2", "100000"])
+#subprocess.check_call(["python3", "test_scheme.py", "1", "4", "2", "100000"])
 # Test detector: 2x1, K=4, M=4.
-subprocess.check_call(["python3", "test_scheme.py", "1", "4", "4", "100000"])
+#subprocess.check_call(["python3", "test_scheme.py", "1", "4", "4", "100000"])
 # Test detector: 2x2, K=4, M=2.
-subprocess.check_call(["python3", "test_scheme.py", "2", "4", "2", "100000"])
+#subprocess.check_call(["python3", "test_scheme.py", "2", "4", "2", "100000"])
 # Test detector: 2x2, K=4, M=4.
-subprocess.check_call(["python3", "test_scheme.py", "2", "4", "4", "100000"])
+#subprocess.check_call(["python3", "test_scheme.py", "2", "4", "4", "100000"])
 
 # Test detector: 2x1, K=1024, M=2.
-subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "2", "100"])
+subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "2", "1000"])
 # Test detector: 2x1, K=1024, M=4.
-subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "4", "100"])
+subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "4", "1000"])
 # Test detector: 2x2, K=1024, M=2.
-subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "2", "100"])
+subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "2", "1000"])
 # Test detector: 2x2, K=1024, M=4.
-subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "4", "100"])
+subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "4", "1000"])
 
 # Test w/ CE: 2x1, K=1024, M=4.
-subprocess.check_call(["python3", "test_system.py", "1", "1024", "4"])
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "4"])
 # Test w/ CE: 2x1, K=1024, M=8.
-subprocess.check_call(["python3", "test_system.py", "1", "1024", "8"])
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "8"])
 # Test detector: 2x1, K=1024, M=16.
-subprocess.check_call(["python3", "test_system.py", "1", "1024", "16"])
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "16"])
 # Test detector: 2x2, K=1024, M=4.
-subprocess.check_call(["python3", "test_system.py", "2", "1024", "4"])
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "4"])
 # Test detector: 2x2, K=1024, M=8.
-subprocess.check_call(["python3", "test_system.py", "2", "1024", "8"])
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "8"])
 # Test detector: 2x2, K=1024, M=16.
-subprocess.check_call(["python3", "test_system.py", "2", "1024", "16"])
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "16"])
 
 # Measure the passed time.
 diff = time.time() - start
