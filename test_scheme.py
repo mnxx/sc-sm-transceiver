@@ -67,9 +67,11 @@ def main():
         start = time.time()
         count = 0
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
-        channel.set_snr(step - 3 * (setup[1] - 1))
-        channel.create_channel_matrix()
+        #channel.set_snr(step - 3 * (setup[1] - 1))
+        channel.set_snr(step)
+        #channel.create_channel_matrix()
         for _ in range(0, rounds):
+            channel.create_channel_matrix()
             #tx_frame = transceiver.create_transmission_frame(k)
             #tx_frame = transceiver.transmit_frame(k, zp_len)
             # Test with random data bits.
