@@ -283,7 +283,7 @@ class LSSDetector:
             # Each step we create a list of all the metrics resulting from the possible symbols.
             possible_metrics = []
             # Find the corresponding metrics.
-            for m in range(0, nb_paths * len(symbol_list)):
+            for m in range(0, nb_paths):
                 # M is upper bound.
                 if m == self.M:
                     break
@@ -295,8 +295,6 @@ class LSSDetector:
                     possible_symbol_vector.append(possible_symbol)
                     # Reshape list to a numpy array in vector form (K * N_t,).
                     #count += 1
-                    #print(count)
-                    #print(len(possible_symbol_vector))
                     x_m = np.reshape(possible_symbol_vector, (self.n_t * (step + 1)))
                     # All H_x block-sub-matrices are N_r x N_t.
                     h = channel[self.n_r * step : self.n_r * step + self.n_r,
