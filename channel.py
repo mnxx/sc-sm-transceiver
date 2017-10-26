@@ -11,6 +11,7 @@
 
 
 import numpy as np
+from itertools import takewhile
 
 
 class MIMOChannel:
@@ -123,7 +124,6 @@ class MIMOChannel:
 class LTEChannel(MIMOChannel):
     """ Class implementing different LTE channel scenarios defined by 3GPP. """
 
-    #def __init__(self)
     def create_channel_matrix(self):
         """ Create the corresponding Block-Toeplitz channel matrix. """
         nb_rows = self.frame_len + self.multipaths - 1
@@ -146,6 +146,78 @@ class LTEChannel(MIMOChannel):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
+
+    def create_EPA(self, sample_rate, sps):
+        """ Create a matrix corresponding to the LTE Extended Pedestrian A Model. """
+        nb_sub_rows = sps * self.n_r
+        nb_sub_columns = sps * self.n_t
+        # Channel model: excees tap delay in [10ns], attenuation linear.
+        #channel_lte_epa = np.zeros(42)
+        channel_lte_epa = dict()
+        channel_lte_epa[0] = 1
+        channel_lte_epa[3] = 0.8
+        channel_lte_epa[7] = 0.63
+        channel_lte_epa[9] = 0.5
+        channel_lte_epa[11] = 0.16
+        channel_lte_epa[19] = 0.02
+        channel_lte_epa[41] = 0.01
+        # Decide on the number of multipath links based on the symbol rate.
+        # EPA: Last echo at 410ns.
+        last_sample = int(np.ceil(410 * 1e-9 * sample_rate))
+        nb_multipaths = int(np.ceil(last_sample / nb_sub_rows))
+        keys = list(channel_lte_epa.keys())
+        key_list = []
+        for _ in range(0, nb_multipaths):
+            key_list.append([])
+            for key in keys:
+                if key in range(_ * nb_sub_rows, _ * nb_sub_rows + nb_sub_rows):
+                    key_list[_].append(key)
+        for _ in range(0, nb_multipaths):
+            # Number of rows and columns of each sub-matrix is sps * N_r and sps * N_t.
+            self.sub_matrices[_] = np.zeros((nb_sub_rows, nb_sub_columns), dtype=complex)
+            for key in key_list[_]:
+                position = np.mod(key, nb_sub_rows)
+                for tx_antenna in range(0, self.n_t):
+                    self.sub_matrices[_][position, tx_antenna * sps] = (np.random.normal(0, np.sqrt(channel_lte_epa[key] / 2), 1)
+                                                                        + 1j * np.random.normal(0, np.sqrt(channel_lte_epa[key] / 2), 1))
+        # Create 4-dimensional matrix using the sub-matrices.
+        nb_rows = self.frame_len + nb_multipaths - 1
+        nb_columns = self.frame_len
+        self.channel_matrix = np.zeros((nb_rows, nb_sub_rows, nb_columns, nb_sub_columns),
+                                       dtype=self.sub_matrices[0].dtype)
+        for index, sub_matrix in self.sub_matrices.items():
+            for element in range(nb_columns):
+                self.channel_matrix[index + element, :, element, :] = sub_matrix
+        # Flatten the 4-dimensional matrix.
+        self.channel_matrix.shape = (nb_rows * nb_sub_rows, nb_columns * nb_sub_columns)
+        print(self.channel_matrix[: 8, : 2])
+        # NORMALIZE CHANNEL MATRIX.
+
+    def create_EVA(self, symbol_rate, sps):
+        """ Create a matrix corresponding to the LTE Extended Vehicular A Model. """
+        channel_lte_eva = np.zeros(252)
+        channel_lte_eva[1] = 1
+        channel_lte_eva[4] = 0.71
+        channel_lte_eva[16] = 0.72
+        channel_lte_eva[32] = 0.72
+        channel_lte_eva[38] = 0.87
+        channel_lte_eva[72] = 0.12
+        channel_lte_eva[110] = 0.2
+        channel_lte_eva[174] = 0.06
+        channel_lte_eva[252] = 0.02
+
+    def create_ETU(self, symbol_rate, sps):
+        """ Create a matrix corresponding to the LTE Extended Urban Model. """
+        channel_lte_etu = np.zeros(501)
+        channel_lte_etu[1] = 0.8
+        channel_lte_etu[6] = 0.8
+        channel_lte_etu[13] = 0.8
+        channel_lte_etu[21] = 1
+        channel_lte_etu[24] = 1
+        channel_lte_etu[51] = 1
+        channel_lte_etu[161] = 0.5
+        channel_lte_etu[231] = 0.32
+        channel_lte_etu[501] = 0.2
 
 
 class HardCodedChannel(MIMOChannel):

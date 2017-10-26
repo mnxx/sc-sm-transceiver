@@ -15,7 +15,8 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from modulation import BPSK as bpsk
-from channel import HardCodedChannel as h
+#from channel import HardCodedChannel as h
+from channel import LTEChannel as h
 from sc_sm_transceiver import Transceiver as tr
 from sc_sm_transceiver import LSSDetector as det
 from sc_sm_transceiver import ChannelEstimator as ce
@@ -45,7 +46,7 @@ def main():
     m = int(sys.argv[3])
     print("***** M = " + str(m))
     # Sample rate.
-    sample_rate = 1e6
+    sample_rate = 1e8
     # Samples per symbol.
     sps = 4
     # Filter span.
@@ -65,7 +66,7 @@ def main():
 
     # Initiate possible offsets.
     # Frequency offset in Hz.
-    f_off = 100
+    f_off = 0
     estimated_f_off = 0
     # Phase offset in rad.
     phi_off = np.pi
@@ -77,9 +78,9 @@ def main():
     # Loops.
     rounds = 100
     # BER is measured for the following SNRs.
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [26]
+    steps = [60]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -87,6 +88,9 @@ def main():
         count = 0
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
         channel.set_snr(step - 3 * (setup[1] - 1))
+        # Create LTE channel model.
+        channel.create_EPA(sample_rate, sps)
+        exit()
         # TRAINING PHASE:
         channel_response_list = []
         for transmit_antenna in range(0, setup[0]):
@@ -104,9 +108,9 @@ def main():
             rx_frame = pulse
             # TO IMPROVE:
             # Create and apply channel matrix for this transmit antenna.
-            channel.create_ta_channel_matrix(sps, transmit_antenna)
-            rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
-            #rx_frame = channel.apply_composed_channel(sps, pulse)
+            #channel.create_ta_channel_matrix(sps, transmit_antenna)
+            #rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
+            rx_frame = channel.apply_channel()
             # Add AWGN to the signal.
             rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
             # RECEPTION:
