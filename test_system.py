@@ -90,7 +90,6 @@ def main():
         channel.set_snr(step - 3 * (setup[1] - 1))
         # Create LTE channel model.
         channel.create_EPA(sample_rate, sps)
-        exit()
         # TRAINING PHASE:
         channel_response_list = []
         for transmit_antenna in range(0, setup[0]):
@@ -102,6 +101,11 @@ def main():
             c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
             # Pulse shape the training frame using an RRC-Filter.
             pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
+            if transmit_antenna == 0:
+                blocks = [[[0],[0]]] * 1024
+            else:
+                blocks =  [[[1],[1]]] * 1024
+            pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
             #pulse = tx_frame
             # Apply a frequency offset.
             #rx_frame = channel.apply_frequency_offset(pulse, sample_rate, f_off)
@@ -110,7 +114,7 @@ def main():
             # Create and apply channel matrix for this transmit antenna.
             #channel.create_ta_channel_matrix(sps, transmit_antenna)
             #rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
-            rx_frame = channel.apply_channel()
+            rx_frame = channel.apply_channel_without_awgn(rx_frame)
             # Add AWGN to the signal.
             rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
             # RECEPTION:
@@ -136,7 +140,7 @@ def main():
                 zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 4 * sps +2
                 y[receive_antenna] = y[receive_antenna][zone : zone + 10 * sps]
                 y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
-                """
+                #"""
                 plt.figure()
                 plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
                 plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
@@ -144,7 +148,7 @@ def main():
                 plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
                 plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
                 plt.show()
-                """
+                #"""
             # Estimate frame using the channel impulse response with the most energy.
             # TO IMPROVE: USE THE BEST OVERALL CHOICE.
             samples_to_use = channel_estimator.estimate_frame(y[0])
@@ -173,7 +177,8 @@ def main():
             # Add antenna information for channel simulation.
             data_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
             # Apply fading channel.
-            rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
+            #rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
+            rx_data_pulse = channel.apply_channel(data_pulse)
             # Apply AWGN.
             rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             # RECEPTION:

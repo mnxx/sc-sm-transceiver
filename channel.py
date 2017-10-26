@@ -82,7 +82,7 @@ class MIMOChannel:
 
     def apply_channel_without_awgn(self, signal_vector):
         """ Directly apply the frequency selective channel without AWGN on a signal vector. """
-        self.create_channel_matrix()
+        #self.create_channel_matrix()
         return (self.channel_matrix).dot(signal_vector)
 
     def get_ce_error_matrix(self, ce_snr):
@@ -190,7 +190,6 @@ class LTEChannel(MIMOChannel):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * nb_sub_rows, nb_columns * nb_sub_columns)
-        print(self.channel_matrix[: 8, : 2])
         # NORMALIZE CHANNEL MATRIX.
 
     def create_EVA(self, symbol_rate, sps):
