@@ -541,14 +541,18 @@ class ChannelEstimator:
             multipaths.append([])
             counter.append(0)
             #best_path = max(antenna_response)
-            threshold = 0.1 * strongest_path
+            threshold = 0.05 * strongest_path
             for index, val in enumerate(antenna_response):
                 abs_val = np.absolute(val)
                 if abs_val > threshold:
                     multipaths[ra].append([val / strongest_path, index])
                     counter[ra] += 1
-            # ADD EXCEPTION IF NO MULTIPATH HAS BEEN FOUND!
-            fastest_path = multipaths[ra][0][1]
+            # If not multipath has been found: add path of value zero.
+            if not multipaths[ra]:
+                multipaths[ra].append([0.0, 0])
+                fastest_path = 0
+            else:
+                fastest_path = multipaths[ra][0][1]
             for path in multipaths[ra]:
                 path[1] = path[1] - fastest_path
                 #print(path[1])
