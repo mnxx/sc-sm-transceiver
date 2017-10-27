@@ -39,6 +39,11 @@ new_points2x1_4_1024 = [0.22234814453125, 0.1577763671875, 0.10309033203125, 0.0
 #[0.2299169921875, 0.151904296875, 0.0909423828125, 0.0441748046875, 0.0248291015625, 0.0100390625, 0.001103515625, 0.0014453125, 0.0003173828125, 0.0, 0.0]
 #[0.2269921875, 0.0790185546875, 0.12890625, 0.014765625, 0.0005322265625, 0.00548828125, 0.0028076171875, 0.0, 0.0, 0.0, 0.0]
 
+norm_channel2142 = [0.405325, 0.3797125, 0.3514, 0.3117875, 0.2572375, 0.2101375, 0.15005, 0.1029125, 0.05715, 0.03255, 0.0152125]
+norm_channel2144 = [0.382325, 0.353525, 0.3111375, 0.2597625, 0.2037625, 0.1422375, 0.085, 0.045625, 0.0198, 0.0072875, 0.0024]
+norm_channel2242 = [0.34675, 0.3064, 0.2555375, 0.1945125, 0.1304625, 0.0755375, 0.0344, 0.0134125, 0.0039375, 0.0007625, 0.0002]
+norm_channel2244 = [0.31555, 0.262225, 0.2006625, 0.1326875, 0.0744375, 0.0303375, 0.009375, 0.001875, 0.0002875, 5e-05, 1.25e-05]
+
 # Testing the 2x2 transmission scheme.
 # 16 dB CE SNR.
 #points2x2_2_ce = [0.0001, 0.00015, 0.00015, 0.0001375, 7.5e-05, 7.5e-05, 0.0001, 0.000225, 8.75e-05, 7.5e-05, 0.00015]
@@ -77,6 +82,8 @@ plt.plot(steps, points2x1_4, 'b-o', label='LSS, M=4')
 plt.plot(steps, new_points2x1_4, 'c-o', label='LSS, M=4')
 plt.plot(steps, new_points2x1_2_1024 , 'k-<', label='LSS, M=2')
 plt.plot(steps, new_points2x1_4_1024 , 'k-o', label='LSS, M=4')
+plt.plot(steps, norm_channel2142 , 'g-<', label='LSS, M=2')
+plt.plot(steps, norm_channel2144 , 'g-o', label='LSS, M=4')
 plt.axis([0, 20, 0.00001, 1])
 plt.xlabel('SNR / dB')
 plt.ylabel('BER')
@@ -94,6 +101,8 @@ plt.plot(steps, gp_4, 'g-')
 plt.plot(steps, new_points2x2_4, 'c-o', label='LSS, M=4')
 plt.plot(steps, new_points2x2_2_1024 , 'k-<', label='LSS, M=2')
 plt.plot(steps, new_points2x2_4_1024 , 'k-o', label='LSS, M=4')
+plt.plot(steps, norm_channel2242 , 'g-<', label='LSS, M=2')
+plt.plot(steps, norm_channel2244 , 'g-o', label='LSS, M=4')
 plt.axis([0, 20, 0.00001, 1])
 plt.xlabel('SNR / dB')
 plt.yscale('log')

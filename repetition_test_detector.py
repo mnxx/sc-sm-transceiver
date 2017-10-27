@@ -21,13 +21,13 @@ import subprocess
 start = time.time()
 
 # Test detector: 2x1, K=4, M=2.
-#subprocess.check_call(["python3", "test_scheme.py", "1", "4", "2", "100000"])
+subprocess.run(["python3", "test_scheme.py", "1", "4", "2", "10000"])
 # Test detector: 2x1, K=4, M=4.
-#subprocess.check_call(["python3", "test_scheme.py", "1", "4", "4", "100000"])
+subprocess.run(["python3", "test_scheme.py", "1", "4", "4", "10000"])
 # Test detector: 2x2, K=4, M=2.
-#subprocess.check_call(["python3", "test_scheme.py", "2", "4", "2", "100000"])
+subprocess.run(["python3", "test_scheme.py", "2", "4", "2", "10000"])
 # Test detector: 2x2, K=4, M=4.
-#subprocess.check_call(["python3", "test_scheme.py", "2", "4", "4", "100000"])
+subprocess.run(["python3", "test_scheme.py", "2", "4", "4", "10000"])
 
 # Test detector: 2x1, K=1024, M=2.
 subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "2", "1000"])
