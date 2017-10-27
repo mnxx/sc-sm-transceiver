@@ -46,7 +46,7 @@ def main():
     m = int(sys.argv[3])
     print("***** M = " + str(m))
     # Sample rate.
-    sample_rate = 1e8
+    sample_rate = 1e7
     # Samples per symbol.
     sps = 4
     # Filter span.
@@ -76,11 +76,11 @@ def main():
     estimated_frame_off = 0
 
     # Loops.
-    rounds = 100
+    rounds = 10
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps = [60]
+    steps = [90]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -89,7 +89,7 @@ def main():
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
         channel.set_snr(step - 3 * (setup[1] - 1))
         # Create LTE channel model.
-        channel.create_EPA(sample_rate, sps)
+        channel.create_ETU(sample_rate, sps)
         # TRAINING PHASE:
         channel_response_list = []
         for transmit_antenna in range(0, setup[0]):
@@ -137,8 +137,9 @@ def main():
                 #                                                             estimated_f_off)
                 # Analyze the channel impulse response for the particular path by correlation.
                 y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
-                zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 4 * sps +2
-                y[receive_antenna] = y[receive_antenna][zone : zone + 10 * sps]
+                y[receive_antenna] = y[receive_antenna] / np.sqrt(np.sum(np.abs(y[receive_antenna])**2))
+                zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 8 * sps +2
+                y[receive_antenna] = y[receive_antenna][zone : zone + 30 * sps]
                 y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
                 #"""
                 plt.figure()
@@ -152,15 +153,17 @@ def main():
             # Estimate frame using the channel impulse response with the most energy.
             # TO IMPROVE: USE THE BEST OVERALL CHOICE.
             samples_to_use = channel_estimator.estimate_frame(y[0])
+            print(samples_to_use)
             # TO IMPROVE: CALCULATE STRONGEST PATH.
             #strongest_path = 200
-            strongest_path = 500
+            #strongest_path = 500
+            strongest_path = 1
             channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use, strongest_path))
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-        #print(estimated_channel.shape)
-
+        print(estimated_channel[: 16, : 2])
+        print(samples_to_use)
         # DATA TRANSMISSION PHASE:
         for _ in range(0, rounds):
             # TRANSMISSION:
@@ -178,7 +181,7 @@ def main():
             data_pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
             # Apply fading channel.
             #rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
-            rx_data_pulse = channel.apply_channel(data_pulse)
+            rx_data_pulse = channel.apply_channel_without_awgn(data_pulse)
             # Apply AWGN.
             rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
             # RECEPTION:
@@ -196,7 +199,7 @@ def main():
                 #data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
                 # Synchronize frames while downsampling.
                 #print(data_path[:20])
-                rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, 1)#samples_to_use)
+                rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, 1) #samples_to_use)
                 # TO IMPROVE: APPLY PHASE OFFSET.
                 #rx_data_frame = channel_estimator.sync_phase_offset(rx_data_frame,
                 #                                                    estimated_phi_off)
