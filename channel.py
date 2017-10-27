@@ -31,12 +31,15 @@ class MIMOChannel:
         """ Create the corresponding Block-Toeplitz channel matrix. """
         nb_rows = self.frame_len + self.multipaths - 1
         nb_columns = self.frame_len
+        # Channel coefficients are uniformly CN(0, 1) distributed for each multipath.
+        norm_factor = self.multipaths
         # Each sub-matrix has a dimension of N_r x N_t.
-        #sub_matrices = dict()
         for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             self.sub_matrices[_] = (np.random.randn(self.n_r, self.n_t)
                                     + 1j * np.random.randn(self.n_r, self.n_t)) / np.sqrt(2)
+            # Normalize the channel power.
+            self.sub_matrices[_]  = self.sub_matrices[_] / norm_factor
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=self.sub_matrices[0].dtype)
