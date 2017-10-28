@@ -31,15 +31,11 @@ class MIMOChannel:
         """ Create the corresponding Block-Toeplitz channel matrix. """
         nb_rows = self.frame_len + self.multipaths - 1
         nb_columns = self.frame_len
-        # Channel coefficients are uniformly CN(0, 1) distributed for each multipath.
-        norm_factor = self.multipaths
         # Each sub-matrix has a dimension of N_r x N_t.
         for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             self.sub_matrices[_] = (np.random.randn(self.n_r, self.n_t)
                                     + 1j * np.random.randn(self.n_r, self.n_t)) / np.sqrt(2)
-            # Normalize the channel power.
-            self.sub_matrices[_]  = self.sub_matrices[_] / norm_factor
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=self.sub_matrices[0].dtype)
@@ -150,10 +146,8 @@ class LTEChannel(MIMOChannel):
                 channel_lte_epa[tap] = channel_lte_epa.pop(key)
             else:
                 del channel_lte_epa[key]
-        # Normalize the channel to power 1, i.e. normalize the PDP to 1.
-        norm_factor = sum(channel_lte_epa.values())
         # Create the corresponding channel matrix.
-        self.create_LTE_channel_matrix(channel_lte_epa, nb_multipaths, sps, norm_factor)
+        self.create_LTE_channel_matrix(channel_lte_epa, nb_multipaths, sps)
 
     def create_EVA(self, sample_rate, sps):
         """ Create a matrix corresponding to the LTE Extended Vehicular A Model. """
@@ -179,10 +173,8 @@ class LTEChannel(MIMOChannel):
                 channel_lte_eva[tap] = channel_lte_eva.pop(key)
             else:
                 del channel_lte_eva[key]
-        # Normalize the channel to power 1, i.e. normalize the PDP to 1.
-        norm_factor = sum(channel_lte_eva.values())
         # Create the corresponding channel matrix.
-        self.create_LTE_channel_matrix(channel_lte_eva, nb_multipaths, sps, norm_factor)
+        self.create_LTE_channel_matrix(channel_lte_eva, nb_multipaths, sps)
 
     def create_ETU(self, sample_rate, sps):
         """ Create a matrix corresponding to the LTE Extended Urban Model. """
@@ -208,13 +200,10 @@ class LTEChannel(MIMOChannel):
                 channel_lte_etu[tap] = channel_lte_etu.pop(key)
             else:
                 del channel_lte_etu[key]
-        # Normalize the channel to power 1, i.e. normalize the PDP to 1.
-        norm_factor = sum(channel_lte_etu.values())
-        print(norm_factor)
         # Create the corresponding channel matrix.
-        self.create_LTE_channel_matrix(channel_lte_etu, nb_multipaths, sps, norm_factor)
+        self.create_LTE_channel_matrix(channel_lte_etu, nb_multipaths, sps)
 
-    def create_LTE_channel_matrix(self, channel_dict, nb_multipaths, sps, norm_factor):
+    def create_LTE_channel_matrix(self, channel_dict, nb_multipaths, sps):
         """ Create a channel matrix based on an LTE channel model. """
         key_list = []
         # Assign the echos to the corresponding multipath sub-matrices.
@@ -223,8 +212,10 @@ class LTEChannel(MIMOChannel):
             for key in list(channel_dict.keys()):
                 if key in range(_ * sps, _ * sps + sps):
                     key_list[_].append(key)
-        print(key_list)
+        #print(key_list)
+        norm_factor = 1
         for _ in range(0, nb_multipaths):
+            sub_norm_factor = 0
             # Number of rows and columns of each sub-matrix is sps * N_r and sps * N_t.
             self.sub_matrices[_] = np.zeros((sps * self.n_r, sps * self.n_t), dtype=complex)
             for key in key_list[_]:
@@ -233,7 +224,12 @@ class LTEChannel(MIMOChannel):
                     for rx in range(0, self.n_r):
                         self.sub_matrices[_][pos + rx * sps, tx * sps] = (np.random.normal(0, np.sqrt(channel_dict[key] / 2), 1)
                                                                           + 1j * np.random.normal(0, np.sqrt(channel_dict[key] / 2), 1))
-            # Normalize the channel power.
+                sub_norm_factor += channel_dict[key]
+            # Find the strongest multipath link.
+            if sub_norm_factor > norm_factor:
+                norm_factor = sub_norm_factor
+        # Normalize the channel powers according to the strongest multipath.
+        for _ in range(0, nb_multipaths):
             self.sub_matrices[_]  = self.sub_matrices[_] / norm_factor
         # Create 4-dimensional matrix using the sub-matrices.
         nb_rows = self.frame_len + nb_multipaths - 1
