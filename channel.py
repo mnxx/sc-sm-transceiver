@@ -11,7 +11,6 @@
 
 
 import numpy as np
-from itertools import takewhile
 
 
 class MIMOChannel:
@@ -120,13 +119,47 @@ class MIMOChannel:
         return signal
 
 
-class LTEChannel(MIMOChannel):
-    """ Class implementing different LTE channel scenarios defined by 3GPP. """
+class CustomChannel(MIMOChannel):
+    """ Class implementing various channel scenarios for a given sample and symbol rate. """
+
+    def create_uniform(self, sample_rate, sps):
+        """ Create channel with uniformly strong multipaths. """
+        # Simulate P uniform fading channels at the symbol rate, attenuation linear.
+        channel_t = 1 / sample_rate
+        channel = dict()
+        for index in range(0, self.multipaths):
+            channel[index * sps] = 1
+        # Create the corresponding channel matrix.
+        self.create_channel_matrix(channel, channel_t, sample_rate, sps)
+
+    def create_linear_1(self, sample_rate, sps):
+        """ Create custom channel with three linearly decreasing multipaths. """
+        # Simulate P uniform fading channels at the symbol rate, attenuation linear.
+        channel_t = 1 / sample_rate
+        channel = dict()
+        channel[0 * sps] = 1
+        channel[1 * sps] = 0.75
+        channel[2 * sps] = 0.5
+        # Create the corresponding channel matrix.
+        self.create_channel_matrix(channel, channel_t, sample_rate, sps)
+
+    def create_linear_2(self, sample_rate, sps):
+        """ Create custom channel with five linearly decreasing multipaths. """
+        # Simulate P uniform fading channels at the symbol rate, attenuation linear.
+        channel_t = 1 / sample_rate
+        channel = dict()
+        channel[0 * sps] = 1
+        channel[1 * sps] = 0.8
+        channel[2 * sps] = 0.6
+        channel[3 * sps] = 0.4
+        channel[4 * sps] = 0.2
+        # Create the corresponding channel matrix.
+        self.create_channel_matrix(channel, channel_t, sample_rate, sps)
 
     def create_EPA(self, sample_rate, sps):
         """ Create a matrix corresponding to the LTE Extended Pedestrian A Model. """
         # Channel model: tap delay in [10ns = 1e-8s], attenuation linear.
-        #channel_lte_epa = np.zeros(42)
+        channel_t = 1e-8
         channel_lte_epa = dict()
         channel_lte_epa[0] = 1
         channel_lte_epa[3] = 0.8
@@ -135,23 +168,13 @@ class LTEChannel(MIMOChannel):
         channel_lte_epa[11] = 0.16
         channel_lte_epa[19] = 0.02
         channel_lte_epa[41] = 0.01
-        # EPA: Last echo at 410ns.
-        # Decide on the number of multipath links based on the symbol rate.
-        last_sample = int(np.ceil(410 * 1e-9 * sample_rate))
-        nb_multipaths = int(np.ceil(last_sample / sps))
-        # Adapt the taps to the sample rate.
-        for key in list(channel_lte_epa.keys()):
-            tap = int((key * sample_rate / 1e8))
-            if tap not in channel_lte_epa:
-                channel_lte_epa[tap] = channel_lte_epa.pop(key)
-            else:
-                del channel_lte_epa[key]
         # Create the corresponding channel matrix.
-        self.create_LTE_channel_matrix(channel_lte_epa, nb_multipaths, sps)
+        self.create_channel_matrix(channel_lte_epa, channel_t , sample_rate, sps)
 
     def create_EVA(self, sample_rate, sps):
         """ Create a matrix corresponding to the LTE Extended Vehicular A Model. """
         # Channel model: tap delay in [10ns = 1e-8s], attenuation linear.
+        channel_t = 1e-8
         channel_lte_eva = dict()
         channel_lte_eva[0] = 1
         channel_lte_eva[3] = 0.71
@@ -162,23 +185,13 @@ class LTEChannel(MIMOChannel):
         channel_lte_eva[109] = 0.2
         channel_lte_eva[173] = 0.06
         channel_lte_eva[251] = 0.02
-        # EVA: Last echo at 2520ns.
-        # Decide on the number of multipath links based on the symbol rate.
-        last_sample = int(np.ceil(2510 * 1e-9 * sample_rate))
-        nb_multipaths = int(np.ceil(last_sample / sps))
-        # Adapt the taps to the sample rate.
-        for key in list(channel_lte_eva.keys()):
-            tap = int((key * sample_rate / 1e8))
-            if tap not in channel_lte_eva:
-                channel_lte_eva[tap] = channel_lte_eva.pop(key)
-            else:
-                del channel_lte_eva[key]
         # Create the corresponding channel matrix.
-        self.create_LTE_channel_matrix(channel_lte_eva, nb_multipaths, sps)
+        self.create_channel_matrix(channel_lte_eva, channel_t , sample_rate, sps)
 
     def create_ETU(self, sample_rate, sps):
         """ Create a matrix corresponding to the LTE Extended Urban Model. """
         # Channel model: tap delay in [10ns = 1e-8s], attenuation linear.
+        channel_t = 1e-8
         channel_lte_etu = dict()
         channel_lte_etu[0] = 0.8
         channel_lte_etu[5] = 0.8
@@ -189,22 +202,24 @@ class LTEChannel(MIMOChannel):
         channel_lte_etu[160] = 0.5
         channel_lte_etu[230] = 0.32
         channel_lte_etu[500] = 0.2
-        # ETU: Last echo at 5010ns.
-        # Decide on the number of multipath links based on the symbol rate.
-        last_sample = int(np.ceil(5000 * 1e-9 * sample_rate))
-        nb_multipaths = int(np.ceil(last_sample / sps))
-        # Adapt the taps to the sample rate.
-        for key in list(channel_lte_etu.keys()):
-            tap = int((key * sample_rate / 1e8))
-            if tap not in channel_lte_etu:
-                channel_lte_etu[tap] = channel_lte_etu.pop(key)
-            else:
-                del channel_lte_etu[key]
         # Create the corresponding channel matrix.
-        self.create_LTE_channel_matrix(channel_lte_etu, nb_multipaths, sps)
+        self.create_channel_matrix(channel_lte_etu, channel_t , sample_rate, sps)
 
-    def create_LTE_channel_matrix(self, channel_dict, nb_multipaths, sps):
+    def create_channel_matrix(self, channel_dict, channel_t, sample_rate, sps):
         """ Create a channel matrix based on an LTE channel model. """
+        # Decide on the number of multipath links based on the symbol rate and the last tap.
+        last_sample = int(np.ceil(max(channel_dict.keys()) * channel_t * sample_rate))
+        nb_multipaths = int(np.ceil((last_sample + 1) / sps))
+        # Adapt the taps to the sample rate.
+        # Position of the taps depends on sample time of the channel and sample time of the signal.
+        for key in list(channel_dict.keys()):
+            tap = int((key * channel_t * sample_rate))
+            if key != tap:
+                if tap not in channel_dict:
+                    channel_dict[tap] = channel_dict.pop(key)
+                else:
+                    del channel_dict[key]
+        #print(channel_dict)
         key_list = []
         # Assign the echos to the corresponding multipath sub-matrices.
         for _ in range(0, nb_multipaths):
@@ -241,7 +256,7 @@ class LTEChannel(MIMOChannel):
                 self.channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * sps * self.n_r, nb_columns * sps * self.n_t)
-        #print(self.channel_matrix[: 16, : 2])
+        #print(self.channel_matrix[: 24, : 2])
 
 class HardCodedChannel(MIMOChannel):
     """ Class defining hard coded channel scenarios to facilitate analyses. """

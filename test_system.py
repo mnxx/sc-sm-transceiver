@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from modulation import BPSK as bpsk
 #from channel import HardCodedChannel as h
-from channel import LTEChannel as h
+from channel import CustomChannel as h
 from sc_sm_transceiver import Transceiver as tr
 from sc_sm_transceiver import LSSDetector as det
 from sc_sm_transceiver import ChannelEstimator as ce
@@ -89,7 +89,7 @@ def main():
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
         channel.set_snr(step - 3 * (setup[1] - 1))
         # Create LTE channel model.
-        channel.create_ETU(sample_rate, sps)
+        channel.create_linear_2(sample_rate, sps)
         # TRAINING PHASE:
         channel_response_list = []
         for transmit_antenna in range(0, setup[0]):
@@ -154,16 +154,12 @@ def main():
             # TO IMPROVE: USE THE BEST OVERALL CHOICE.
             samples_to_use = channel_estimator.estimate_frame(y[0])
             print(samples_to_use)
-            # TO IMPROVE: CALCULATE STRONGEST PATH.
-            #strongest_path = 200
-            #strongest_path = 500
-            strongest_path = 1
-            channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use, strongest_path))
+            channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use))
         # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
         # Channel matrix is 'deformed' because it includes the filters' impulse responses.
         estimated_channel = channel_estimator.recreate_channel(channel_response_list)
         print(estimated_channel[: 16, : 2])
-        print(samples_to_use)
+        #print(samples_to_use)
         # DATA TRANSMISSION PHASE:
         for _ in range(0, rounds):
             # TRANSMISSION:
