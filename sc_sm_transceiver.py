@@ -529,7 +529,7 @@ class ChannelEstimator:
         #print(nb_multipaths)
         return channel_matrix
 
-    def extract_channel_response(self, channel_responses, response_to_use, strongest_path):
+    def extract_channel_response(self, channel_responses, response_to_use):
         """ Extract the channel impulse response vector corresponding to a transmit antenna. """
         #n_r = channel_responses.shape[0]
         # Extract actual multi-paths for each reception antenna.
@@ -541,11 +541,11 @@ class ChannelEstimator:
             multipaths.append([])
             counter.append(0)
             #best_path = max(antenna_response)
-            threshold = 0.05 * strongest_path
+            threshold = 0.05
             for index, val in enumerate(antenna_response):
                 abs_val = np.absolute(val)
                 if abs_val > threshold:
-                    multipaths[ra].append([val / strongest_path, index])
+                    multipaths[ra].append([val, index])
                     counter[ra] += 1
             # If not multipath has been found: add path of value zero.
             if not multipaths[ra]:
