@@ -122,6 +122,15 @@ class MIMOChannel:
 class CustomChannel(MIMOChannel):
     """ Class implementing various channel scenarios for a given sample and symbol rate. """
 
+    def create_flat(self, sample_rate, sps):
+        """ Create a flat fading channel, i.e. only one multipath. """
+        # Simulate one propagation path at the symbol rate, attenuation linear.
+        channel_t = 1 / sample_rate
+        channel = dict()
+        channel[0] = 1
+        # Create the corresponding channel matrix.
+        self.create_channel_matrix(channel, channel_t, sample_rate, sps)
+
     def create_uniform(self, sample_rate, sps):
         """ Create channel with uniformly strong multipaths. """
         # Simulate P uniform fading channels at the symbol rate, attenuation linear.
