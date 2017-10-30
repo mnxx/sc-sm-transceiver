@@ -266,8 +266,7 @@ class LSSDetector:
             # Compute the metrics for each candidate vector.
             # Each metric is a tuple of the value and the symbol.
             #print(str(rx_vector[: self.n_r].shape) + " ### " + str(h.shape) + " ## " + str(h.dot(x_m)) + " ### " + str(possible_symbol))
-            metric = ((np.linalg.norm(rx_vector[: self.n_r]
-                                      - h.dot(x_m)))**2, possible_symbol)
+            metric = ((np.linalg.norm(rx_vector[: self.n_r] - h.dot(x_m)))**2, possible_symbol)
             possible_first_metrics.append(metric)
         possible_first_metrics.sort()
         #print(possible_first_metrics)
@@ -301,6 +300,8 @@ class LSSDetector:
                                 : self.n_t * step + self.n_t]
                     # Compute the metrics for each candidate vector.
                     # Each metric is a tuple of the value and m to keep the path information.
+                    #print(str(h.shape) + "  ÜÜÜ " + str(x_m) + " ÜÜÜ " + str(h.dot(x_m)) + " ÜÜÜ " + str(h.dot(x_m).shape))
+                    #print(str(rx_vector[2 * step : 2 * step + 2]) + " ** " + str(rx_vector[2 * step : 2 * step + step].shape))
                     metric = (e[m] + (np.linalg.norm(rx_vector[self.n_r * step : self.n_r * step + self.n_r]
                                                      - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
                     # Avoid adding the same metric multiple times.
@@ -550,6 +551,7 @@ class ChannelEstimator:
             # If not multipath has been found: add path of value zero.
             if not multipaths[ra]:
                 multipaths[ra].append([0.0, 0])
+                counter[ra] += 1
                 fastest_path = 0
             else:
                 fastest_path = multipaths[ra][0][1]
