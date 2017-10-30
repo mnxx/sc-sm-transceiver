@@ -26,13 +26,11 @@ def main():
     """ Main function. """
     # Initiate constants used in the transmission.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    n_r = int(sys.argv[1])
-    print("***** N_r = " + str(n_r))
-    setup = (2, n_r)
+    #n_r = int(sys.argv[1])
+    setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
     #k = 1024
-    k = int(sys.argv[2])
-    print("***** K = " + str(k))
+    k = int(sys.argv[1])
     # Number of multipath links.
     p = 3
     # Length of the Zero-Prefix.
@@ -43,8 +41,7 @@ def main():
     # M algorithm: breadth-first search with M survivors.
     #m = int(sys.argv[2])
     #m = 4
-    m = int(sys.argv[3])
-    print("***** M = " + str(m))
+    m = int(sys.argv[2])
     # Sample rate.
     sample_rate = 1e7
     # Samples per symbol.
@@ -75,23 +72,40 @@ def main():
     frame_off = 0
     estimated_frame_off = 0
 
+    # Channel choice for testing.
+    channel_choice  = int(sys.argv[3])
+
     # Loops.
     nb_channels = 10
-    rounds = 10
+    rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
     #steps = [90]
     # The resulting BER values are stored in a list.
     points = []
+    start = time.time()
     for step in steps:
-        start = time.time()
         count = 0
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
         channel.set_snr(step - 3 * (setup[1] - 1))
         for realization  in range(0, nb_channels):
             # Create LTE channel model.
-            channel.create_flat(sample_rate, sps)
+            if channel_choice == 1:
+                channel.create_flat(sample_rate, sps)
+            elif channel_choice == 2:
+                channel.create_uniform(sample_rate, sps)
+            elif channel_choice == 3:
+                channel.create_linear_1(sample_rate, sps)
+            elif channel_choice == 4:
+                channel.create_linear_2(sample_rate, sps)
+            elif channel_choice == 5:
+                channel.create_EPA(sample_rate, sps)
+            elif channel_choice == 6:
+                channel.create_EVA(sample_rate, sps)
+            else:
+                channel.create_ETU(sample_rate, sps)
             # TRAINING PHASE:
             channel_response_list = []
             for transmit_antenna in range(0, setup[0]):
@@ -227,14 +241,19 @@ def main():
         # BER calculation.
         ber = count / (k * setup[0] * rounds * nb_channels)
         # Measure the passed time.
-        diff = time.time() - start
+        #diff = time.time() - start
         # Write result in console.
-        print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
-              + "> BER = " + str(ber) + "\n"
-              + "> In " + str(diff) + " seconds.")
+        #print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
+        #      + "> BER = " + str(ber) + "\n"
+        #      + "> In " + str(diff) + " seconds.")
         # Append result to the list.
         points.append(ber)
     # Print the results for different SNRs.
+    print("***** K = " + str(k))
+    print("***** M = " + str(m))
+    print("***** CHANNEL = " + str(channel_choice))
+    diff = time.time() - start
+    print("> In " + str(diff) + " seconds:")
     print(points)
 
 if __name__ == '__main__':

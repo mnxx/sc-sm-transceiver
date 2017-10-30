@@ -20,23 +20,89 @@ import subprocess
 # Start measuring the time. This might take a while.
 start = time.time()
 
+# Commands to be run.
+commands = [
+    "python3 test_scheme.py 1 4 2 100000",
+    "python3 test_scheme.py 1 4 4 100000",
+    "python3 test_scheme.py 2 4 2 100000",
+    "python3 test_scheme.py 2 4 4 100000",
+]
+# Run in parallel.
+processes = [subprocess.Popen(cmd, shell=True) for cmd in commands]
+# Wait until all processes have finished.
+for p in processes: p.wait()
+
+# Commands to be run.
+commands = [
+    "python3 test_system.py 1024 4 1",
+    "python3 test_system.py 1024 4 2",
+    "python3 test_system.py 1024 4 3",
+    "python3 test_system.py 1024 4 4",
+    "python3 test_system.py 1024 4 5",
+    "python3 test_system.py 1024 4 6",
+    "python3 test_system.py 1024 4 7",
+]
+# Run in parallel.
+processes = [subprocess.Popen(cmd, shell=True) for cmd in commands]
+# Wait until all processes have finished.
+for p in processes: p.wait()
+
 # Test detector: 2x1, K=4, M=2.
-subprocess.run(["python3", "test_scheme.py", "1", "4", "2", "10000"])
+#subprocess.run(["python3", "test_scheme.py", "1", "4", "2", "10000"])
 # Test detector: 2x1, K=4, M=4.
-subprocess.run(["python3", "test_scheme.py", "1", "4", "4", "10000"])
+#subprocess.run(["python3", "test_scheme.py", "1", "4", "4", "10000"])
 # Test detector: 2x2, K=4, M=2.
-subprocess.run(["python3", "test_scheme.py", "2", "4", "2", "10000"])
+#subprocess.run(["python3", "test_scheme.py", "2", "4", "2", "10000"])
 # Test detector: 2x2, K=4, M=4.
-subprocess.run(["python3", "test_scheme.py", "2", "4", "4", "10000"])
+#subprocess.run(["python3", "test_scheme.py", "2", "4", "4", "10000"])
 
 # Test detector: 2x1, K=1024, M=2.
-subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "2", "1000"])
+#subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "2", "1000"])
 # Test detector: 2x1, K=1024, M=4.
-subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "4", "1000"])
+#subprocess.check_call(["python3", "test_scheme.py", "1", "1024", "4", "1000"])
 # Test detector: 2x2, K=1024, M=2.
-subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "2", "1000"])
+#subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "2", "1000"])
 # Test detector: 2x2, K=1024, M=4.
-subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "4", "1000"])
+#subprocess.check_call(["python3", "test_scheme.py", "2", "1024", "4", "1000"])
+
+# Test w/ CE: 2x1, K=1024, M=4.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "4"])
+# Test w/ CE: 2x1, K=1024, M=8.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "8"])
+# Test detector: 2x1, K=1024, M=16.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "16"])
+# Test detector: 2x2, K=1024, M=4.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "4"])
+# Test detector: 2x2, K=1024, M=8.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "8"])
+# Test detector: 2x2, K=1024, M=16.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "16"])
+
+# Test w/ CE: 2x2, K=1024, M=4.
+#subprocess.run(["python3", "test_system.py", "2", "1024", "4", ""])
+# Test w/ CE: 2x1, K=1024, M=8.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "8"])
+# Test detector: 2x1, K=1024, M=16.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "16"])
+# Test detector: 2x2, K=1024, M=4.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "4"])
+# Test detector: 2x2, K=1024, M=8.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "8"])
+# Test detector: 2x2, K=1024, M=16.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "16"])
+
+# Test w/ CE: 2x1, K=1024, M=4.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "4"])
+# Test w/ CE: 2x1, K=1024, M=8.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "8"])
+# Test detector: 2x1, K=1024, M=16.
+#subprocess.check_call(["python3", "test_system.py", "1", "1024", "16"])
+# Test detector: 2x2, K=1024, M=4.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "4"])
+# Test detector: 2x2, K=1024, M=8.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "8"])
+# Test detector: 2x2, K=1024, M=16.
+#subprocess.check_call(["python3", "test_system.py", "2", "1024", "16"])
 
 # Test w/ CE: 2x1, K=1024, M=4.
 #subprocess.check_call(["python3", "test_system.py", "1", "1024", "4"])

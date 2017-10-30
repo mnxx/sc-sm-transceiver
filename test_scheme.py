@@ -24,12 +24,10 @@ def main():
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
     n_r = int(sys.argv[1])
-    print("***** N_r = " + str(n_r))
     setup = (2, n_r)
     # Frame length of the transmission - K symbols for each transmission.
     #k = 4
     k = int(sys.argv[2])
-    print("***** K = " + str(k))
     # Number of multipath links.
     p = 3
     # Length of the Zero-Prefix.
@@ -39,7 +37,6 @@ def main():
     # M algorithm: breadth-first search with M survivors.
     #m = 2
     m = int(sys.argv[3])
-    print("***** M = " + str(m))
 
     # Use a linear modulation scheme.
     modulation = bpsk()
@@ -56,19 +53,18 @@ def main():
     # LOOP FOR TESTING PURPOSES.
     #rounds = 100000
     rounds = int(sys.argv[4])
-    print("***** ROUNDS = " + str(rounds))
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
     steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [4]
+    #steps = [14, 16, 18]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
         start = time.time()
         count = 0
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
-        #channel.set_snr(step - 3 * (setup[1] - 1))
-        channel.set_snr(step)
+        channel.set_snr(step - 3 * (setup[1] - 1))
+        #channel.set_snr(step)
         #channel.create_channel_matrix()
         for _ in range(0, rounds):
             channel.create_channel_matrix()
@@ -114,12 +110,16 @@ def main():
         # Measure the passed time.
         diff = time.time() - start
         # Write result in console.
-        print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
-              + "> BER = " + str(ber) + "\n"
-              + "> In " + str(diff) + " seconds.")
+        #print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
+        #      + "> BER = " + str(ber) + "\n"
+        #      + "> In " + str(diff) + " seconds.")
         # Append result to the list.
         points.append(ber)
     # Print the results for different SNRs.
+    print("***** N_r = " + str(n_r))
+    print("***** K = " + str(k))
+    print("***** M = " + str(m))
+    print("***** ROUNDS = " + str(rounds))
     print(points)
 
 if __name__ == '__main__':
