@@ -43,7 +43,7 @@ def main():
     #m = 4
     m = int(sys.argv[2])
     # Sample rate.
-    sample_rate = 1e7
+    sample_rate = 1e8
     # Samples per symbol.
     sps = 4
     # Filter span.
@@ -76,11 +76,11 @@ def main():
     channel_choice  = int(sys.argv[3])
 
     # Loops.
-    nb_channels = 10
-    rounds = 1
+    nb_channels = 500
+    rounds = 10
     # BER is measured for the following SNRs.
-    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
+    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
     #steps = [90]
     # The resulting BER values are stored in a list.
@@ -153,9 +153,12 @@ def main():
                     #                                                             estimated_f_off)
                     # Analyze the channel impulse response for the particular path by correlation.
                     y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
+                    plt.figure()
+                    plt.title('Cross-correlation: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
+                    plt.plot(np.abs(y[receive_antenna]), 'm-<')
                     y[receive_antenna] = y[receive_antenna] / np.sqrt(np.sum(np.abs(y[receive_antenna])**2))
-                    zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 8 * sps +2
-                    y[receive_antenna] = y[receive_antenna][zone : zone + 30 * sps]
+                    zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 20 * sps +2
+                    y[receive_antenna] = y[receive_antenna][zone : zone + 50 * sps]
                     y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
                     """
                     plt.figure()
@@ -175,6 +178,7 @@ def main():
             # Channel matrix is 'deformed' because it includes the filters' impulse responses.
             estimated_channel = channel_estimator.recreate_channel(channel_response_list)
             #print(estimated_channel[: 16, : 2])
+            #print(estimated_channel.shape)
             #print(samples_to_use)
             # DATA TRANSMISSION PHASE:
             for _ in range(0, rounds):
@@ -244,7 +248,7 @@ def main():
         #diff = time.time() - start
         # Write result in console.
         #print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
-        #      + "> BER = " + str(ber) + "\n"
+        #      + "> BER = " + str(ber))
         #      + "> In " + str(diff) + " seconds.")
         # Append result to the list.
         points.append(ber)

@@ -21,16 +21,16 @@ import subprocess
 start = time.time()
 
 # Commands to be run.
-commands = [
-    "python3 test_scheme.py 1 4 2 100000",
-    "python3 test_scheme.py 1 4 4 100000",
-    "python3 test_scheme.py 2 4 2 100000",
-    "python3 test_scheme.py 2 4 4 100000",
-]
+#commands = [
+#    "python3 test_scheme.py 1 4 2 100000",
+#    "python3 test_scheme.py 1 4 4 100000",
+#    "python3 test_scheme.py 2 4 2 100000",
+#    "python3 test_scheme.py 2 4 4 100000",
+#]
 # Run in parallel.
-processes = [subprocess.Popen(cmd, shell=True) for cmd in commands]
+#processes = [subprocess.Popen(cmd, shell=True) for cmd in commands]
 # Wait until all processes have finished.
-for p in processes: p.wait()
+#for p in processes: p.wait()
 
 # Commands to be run.
 commands = [
@@ -39,8 +39,8 @@ commands = [
     "python3 test_system.py 1024 4 3",
     "python3 test_system.py 1024 4 4",
     "python3 test_system.py 1024 4 5",
-    "python3 test_system.py 1024 4 6",
-    "python3 test_system.py 1024 4 7",
+#    "python3 test_system.py 1024 4 6",
+#    "python3 test_system.py 1024 4 7",
 ]
 # Run in parallel.
 processes = [subprocess.Popen(cmd, shell=True) for cmd in commands]
