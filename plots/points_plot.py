@@ -95,7 +95,7 @@ plt.yscale('log')
 plt.grid()
 plt.legend()
 
-#plt.show()
+plt.show()
 
-from matplotlib2tikz import save as tikz_save
-tikz_save('../master-thesis/figures/detector_k128.tex', figureheight='9.5cm', figurewidth='7.5cm');
+#from matplotlib2tikz import save as tikz_save
+#tikz_save('../master-thesis/figures/detector_k128.tex', figureheight='9.5cm', figurewidth='7.5cm');
