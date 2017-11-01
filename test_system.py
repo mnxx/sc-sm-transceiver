@@ -76,13 +76,15 @@ def main():
     channel_choice  = int(sys.argv[3])
 
     # Loops.
-    nb_channels = 500
+    nb_channels = 100
+    #nb_channels = 1
     rounds = 10
+    #rounds = 1
     # BER is measured for the following SNRs.
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [90]
+    steps = [90]
     # The resulting BER values are stored in a list.
     points = []
     start = time.time()
@@ -118,9 +120,9 @@ def main():
                 # Pulse shape the training frame using an RRC-Filter.
                 pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
                 if transmit_antenna == 0:
-                    blocks = [[[0],[0]]] * 1024
+                    blocks = [[[0],[0]]] * k
                 else:
-                    blocks =  [[[1],[1]]] * 1024
+                    blocks =  [[[1],[1]]] * k
                 pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
                 #pulse = tx_frame
                 # Apply a frequency offset.
@@ -153,9 +155,9 @@ def main():
                     #                                                             estimated_f_off)
                     # Analyze the channel impulse response for the particular path by correlation.
                     y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
-                    plt.figure()
-                    plt.title('Cross-correlation: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
-                    plt.plot(np.abs(y[receive_antenna]), 'm-<')
+                    #plt.figure()
+                    #plt.title('Cross-correlation: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
+                    #plt.plot(np.abs(y[receive_antenna]), 'm-<')
                     y[receive_antenna] = y[receive_antenna] / np.sqrt(np.sum(np.abs(y[receive_antenna])**2))
                     zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 20 * sps +2
                     y[receive_antenna] = y[receive_antenna][zone : zone + 50 * sps]
@@ -184,7 +186,7 @@ def main():
             for _ in range(0, rounds):
                 # TRANSMISSION:
                 # Test with random data bits (ONE FRAME / PULSE SHAPING IS NEEDED FOR EACH FRAME).
-                data_frame = np.random.randint(0, 2, 2048).tolist()
+                data_frame = np.random.randint(0, 2, k * setup[0]).tolist()
                 #data_frame = [1, 1, 1, 1] * 512
                 #data_frame = np.ones(2048, dtype=int).tolist()
                 blocks = transceiver.data_to_blocks(data_frame)

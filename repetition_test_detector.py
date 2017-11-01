@@ -34,11 +34,11 @@ start = time.time()
 
 # Commands to be run.
 commands = [
-    "python3 test_system.py 1024 4 1",
-    "python3 test_system.py 1024 4 2",
-    "python3 test_system.py 1024 4 3",
-    "python3 test_system.py 1024 4 4",
-    "python3 test_system.py 1024 4 5",
+    "python3 test_system.py 128 4 1",
+    "python3 test_system.py 128 4 2",
+    "python3 test_system.py 128 4 3",
+    "python3 test_system.py 128 4 4",
+#    "python3 test_system.py 1024 4 5",
 #    "python3 test_system.py 1024 4 6",
 #    "python3 test_system.py 1024 4 7",
 ]

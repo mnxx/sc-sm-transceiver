@@ -542,7 +542,7 @@ class ChannelEstimator:
             multipaths.append([])
             counter.append(0)
             #best_path = max(antenna_response)
-            threshold = 0.05
+            threshold = 0.15
             for index, val in enumerate(antenna_response):
                 abs_val = np.absolute(val)
                 if abs_val > threshold:
