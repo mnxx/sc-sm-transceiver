@@ -54,6 +54,77 @@ new_points2x1_4_1024 = [0.2222216796875, 0.151513671875, 0.090869140625, 0.03934
 new_points2x2_2_1024 = [0.222734375, 0.1414404296875, 0.08794921875, 0.048681640625, 0.0182470703125, 0.00736328125, 0.0018017578125, 0.000556640625, 0.0002294921875, 0.0, 0.0]
 new_points2x2_4_1024 = [0.1597802734375, 0.105732421875, 0.0496923828125, 0.0148291015625, 0.002275390625, 0.0002685546875, 9.27734375e-05, 0.0, 0.0, 0.0, 0.0]
 
+# OFDM-SM
+ofdm_sm2x1 = [0.232254, 0.184291, 0.137450, 0.099697, 0.069683, 0.048027, 0.031876, 0.020667, 0.013600, 0.008385, 0.005842]
+"""
+0	0.232254
+1	0.208437
+2	0.184291
+3	0.161436
+4	0.137450
+5	0.118708
+6	0.099697
+7	0.084043
+8	0.069683
+9	0.058973
+10	0.048027
+11	0.038166
+12	0.031876
+13	0.026397
+14	0.020667
+15	0.016176
+16	0.013600
+17	0.010684
+18	0.008385
+19	0.007139
+20	0.005842
+21	0.004245
+22	0.003228
+23	0.002829
+24	0.002355
+25	0.001629
+26	0.001424
+27	0.001118
+28	0.000767
+29	0.000570
+30	0.000366
+"""
+ofdm_sm2x2 = [0.175181, 0.129666, 0.086101, 0.049967, 0.026723, 0.012924, 0.005945, 0.002302, 0.000930, 0.000466, 0.000200]
+#[0.109666, 0.066076, 0.036543, 0.018635, 0.008719, 0.003908, 0.001843, 0.000713, 0.000329, 0.000149, 0.000055]
+"""
+0	0.109666
+1	0.086101
+2	0.066076
+3	0.049967
+4	0.036543
+5	0.026723
+6	0.018635
+7	0.012924
+8	0.008719
+9	0.005945
+10	0.003908
+11	0.002302
+12	0.001843
+13	0.000930
+14	0.000713
+15	0.000466
+16	0.000329
+17	0.000200
+18	0.000149
+19	0.000077
+20	0.000055
+21	0.000033
+22	0.000018
+23	0.000014
+24	0.000003
+25	0.000001
+26	0.000013
+27	0.000003
+28	0.000000
+29	0.000000
+30	0.000000
+"""
+
 # BER is measured for the following SNRs.
 steps = np.arange(0, 22, 2)
 
@@ -66,10 +137,11 @@ plt.title('MIMO-setup: 2x1')
 #plt.plot(steps, points2x1_4, 'b-o', label='LSS, M=4')
 plt.plot(steps, new_points2x1_2, 'r-<', label='K=4, M=2')
 plt.plot(steps, new_points2x1_4, 'b-o', label='K=4, M=4')
-plt.plot(steps, new_points2x1_2_128 , 'g-<', label='K=128, M=2')
-plt.plot(steps, new_points2x1_4_128, 'g-o', label='K=128, M=4')
+#plt.plot(steps, new_points2x1_2_128 , 'g-<', label='K=128, M=2')
+#plt.plot(steps, new_points2x1_4_128, 'g-o', label='K=128, M=4')
 #plt.plot(steps, new_points2x1_2_1024 , 'm-<', label='K=1024, M=2')
 #plt.plot(steps, new_points2x1_4_1024 , 'c-o', label='K=1024, M=4')
+plt.plot(steps, ofdm_sm2x1, 'm-*', label='OFDM-SM')
 plt.axis([0, 20, 0.00001, 1])
 plt.xlabel('SNR / dB')
 plt.ylabel('BER')
@@ -85,17 +157,18 @@ plt.title('MIMO-setup: 2x2')
 #plt.plot(steps, points2x2_4, 'b-o', label='LSS, M=4')
 plt.plot(steps, new_points2x2_2, 'r-<', label='K=4, M=2')
 plt.plot(steps, new_points2x2_4, 'b-o', label='K=4, M=4')
-plt.plot(steps, new_points2x2_2_128 , 'g-<', label='K=128, M=2')
-plt.plot(steps, new_points2x2_4_128, 'g-o', label='K=128, M=4')
+#plt.plot(steps, new_points2x2_2_128 , 'g-<', label='K=128, M=2')
+#plt.plot(steps, new_points2x2_4_128, 'g-o', label='K=128, M=4')
 #plt.plot(steps, new_points2x2_2_1024 , 'm-<', label='K=1024, M=2')
 #plt.plot(steps, new_points2x2_4_1024 , 'c-o', label='K=1024, M=4')
+plt.plot(steps, ofdm_sm2x2, 'm-*', label='OFDM-SM')
 plt.axis([0, 20, 0.00001, 1])
 plt.xlabel('SNR / dB')
 plt.yscale('log')
 plt.grid()
 plt.legend()
 
-plt.show()
+#plt.show()
 
-#from matplotlib2tikz import save as tikz_save
-#tikz_save('../master-thesis/figures/detector_k128.tex', figureheight='9.5cm', figurewidth='7.5cm');
+from matplotlib2tikz import save as tikz_save
+tikz_save('../master-thesis/figures/ofdm_sm.tex', figureheight='9.5cm', figurewidth='7.5cm');
