@@ -76,9 +76,9 @@ def main():
     channel_choice  = int(sys.argv[3])
 
     # Loops.
-    nb_channels = 100
+    nb_channels = 1
     #nb_channels = 1
-    rounds = 10
+    rounds = 1
     #rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
@@ -155,14 +155,16 @@ def main():
                     #                                                             estimated_f_off)
                     # Analyze the channel impulse response for the particular path by correlation.
                     y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
-                    #plt.figure()
-                    #plt.title('Cross-correlation: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
-                    #plt.plot(np.abs(y[receive_antenna]), 'm-<')
+                    """
+                    plt.figure()
+                    plt.title('Cross-correlation: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
+                    plt.plot(np.abs(y[receive_antenna]), 'm-<')
+                    """
                     y[receive_antenna] = y[receive_antenna] / np.sqrt(np.sum(np.abs(y[receive_antenna])**2))
                     zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 20 * sps +2
                     y[receive_antenna] = y[receive_antenna][zone : zone + 50 * sps]
                     y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
-                    """
+                    #"""
                     plt.figure()
                     plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
                     plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
@@ -170,7 +172,7 @@ def main():
                     plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
                     plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
                     plt.show()
-                    """
+                    #"""
                 # Estimate frame using the channel impulse response with the most energy.
                 # TO IMPROVE: USE THE BEST OVERALL CHOICE.
                 samples_to_use = channel_estimator.estimate_frame(y[0])
@@ -179,7 +181,7 @@ def main():
             # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
             # Channel matrix is 'deformed' because it includes the filters' impulse responses.
             estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-            #print(estimated_channel[: 16, : 2])
+            print(estimated_channel[: 16, : 2])
             #print(estimated_channel.shape)
             #print(samples_to_use)
             # DATA TRANSMISSION PHASE:
