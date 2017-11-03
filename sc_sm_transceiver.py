@@ -218,7 +218,7 @@ class Transceiver:
                 h_rrc[index] = factor * ((np.sin(np.pi * t / T_s * (1 - beta)) + 4 * beta * t / T_s * np.cos(np.pi * t / T_s * (1 + beta))) /
                                          (np.pi * t / T_s * (1 - (4 * beta * t / T_s)**2)))
         h_rrc = h_rrc / np.sqrt(np.sum(np.abs(h_rrc)**2))
-        return np.convolve(h_rrc, frame, 'same')
+        return np.convolve(h_rrc, frame, 'full')
 
     def remove_zero_pad(self, frame, prefix_len):
         """ Remove the padding of a frame, i.e. a list of symbols. """

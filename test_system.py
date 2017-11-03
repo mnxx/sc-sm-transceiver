@@ -206,7 +206,7 @@ def main():
                 rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
                 # RECEPTION:
                 # Split into receive antennas.
-                rx_data_frame = np.zeros((setup[1], int(rx_data_pulse.size / setup[1] / sps)), dtype=complex)
+                rx_data_frame = np.zeros((setup[1], int((rx_data_pulse.size + setup[1] * span * sps - 1) / setup[1] / sps)), dtype=complex)
                 # Synchronization and downsampling for each receive antenna.
                 for receive_antenna in range(0, setup[1]):
                     data_path = np.zeros((int(rx_data_pulse.size / setup[1])), dtype=complex)
