@@ -123,7 +123,7 @@ def main():
                     blocks = [[[0],[0]]] * k
                 else:
                     blocks =  [[[1],[1]]] * k
-                pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
+                pulse = transceiver.upsampled_sm_modulation_filtered(blocks, pulse, span, sps)
                 #pulse = tx_frame
                 # Apply a frequency offset.
                 #rx_frame = channel.apply_frequency_offset(pulse, sample_rate, f_off)
@@ -164,7 +164,7 @@ def main():
                     zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 20 * sps +2
                     y[receive_antenna] = y[receive_antenna][zone : zone + 50 * sps]
                     y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
-                    #"""
+                    """
                     plt.figure()
                     plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
                     plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
@@ -172,7 +172,7 @@ def main():
                     plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
                     plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
                     plt.show()
-                    #"""
+                    """
                 # Estimate frame using the channel impulse response with the most energy.
                 # TO IMPROVE: USE THE BEST OVERALL CHOICE.
                 samples_to_use = channel_estimator.estimate_frame(y[0])
