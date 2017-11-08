@@ -24,7 +24,7 @@ def main():
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
     n_r = int(sys.argv[1])
-    setup = (2, n_r)
+    setup = (128, n_r)
     # Frame length of the transmission - K symbols for each transmission.
     #k = 4
     k = int(sys.argv[2])
@@ -50,20 +50,24 @@ def main():
     # Detect the sent frame using the M-algorithm based LSS-ML detector.
     detector = det(setup, m)
 
+    symbol_len = 1 + int(np.log2(setup[0]))
+
     # LOOP FOR TESTING PURPOSES.
     #rounds = 100000
     rounds = int(sys.argv[4])
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
     steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [14, 16, 18]
+    #steps = [50]
     # The resulting BER values are stored in a list.
     points = []
+    start = time.time()
     for step in steps:
-        start = time.time()
+        #start = time.time()
         count = 0
         # Adapt for diversity gain of 3 dB for each additional receive antenna.
-        channel.set_snr(step - 3 * (setup[1] - 1))
+        #channel.set_snr(step - 3 * (setup[1] - 1))
+        channel.set_snr(step - 3 * int(np.log2(setup[1])))
         #channel.set_snr(step)
         #channel.create_channel_matrix()
         for _ in range(0, rounds):
@@ -71,7 +75,7 @@ def main():
             #tx_frame = transceiver.create_transmission_frame(k)
             #tx_frame = transceiver.transmit_frame(k, zp_len)
             # Test with random data bits.
-            data_frame = np.random.randint(0, 2, k * setup[0]).tolist()
+            data_frame = np.random.randint(0, 2, k * symbol_len).tolist()
             # Convert bits into spatial modulation symbols.
             blocks = transceiver.data_to_blocks(data_frame)
             modulated_symbols = np.array(modulation.modulate([block[1] for block in blocks]))
@@ -102,13 +106,13 @@ def main():
                 modulated_info = modulation.demodulate(temp[-1])
                 # Append demodulated bits to the result.
                 detected_bits = detected_bits + antenna_info + modulated_info
-            for index in range(0, k * setup[0]):
+            for index in range(0, k * symbol_len):
                 if data_frame[index] != detected_bits[index]:
                     count += 1
         # BER calculation.
-        ber = count / (k * setup[0] * rounds)
+        ber = count / (k * symbol_len * rounds)
         # Measure the passed time.
-        diff = time.time() - start
+        #diff = time.time() - start
         # Write result in console.
         #print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
         #      + "> BER = " + str(ber) + "\n"
@@ -116,10 +120,12 @@ def main():
         # Append result to the list.
         points.append(ber)
     # Print the results for different SNRs.
+    diff = time.time() - start
     print("***** N_r = " + str(n_r))
     print("***** K = " + str(k))
     print("***** M = " + str(m))
     print("***** ROUNDS = " + str(rounds))
+    print("> In " + str(diff) + " seconds.")
     print(points)
 
 if __name__ == '__main__':
