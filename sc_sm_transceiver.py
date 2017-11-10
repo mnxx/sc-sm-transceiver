@@ -12,6 +12,7 @@
 
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def flatten_list(given_list_of_lists):
@@ -128,10 +129,10 @@ class Transceiver:
             antenna_info = self.bits_to_index(block[0])
             # Use SM symbol creation algorithm. Keep convention: Antenna indices start with 1.
             antenna_index = antenna_info + 1
-            sm_symbol = np.concatenate((np.zeros(antenna_index - 1),
-                                        np.array([modulated_symbols[index]])))
+            sm_symbol = np.concatenate((np.zeros(antenna_index - 1, dtype=complex),
+                                        np.array([modulated_symbols[index]], dtype=complex)))
             sm_symbol = np.concatenate((sm_symbol,
-                                        np.zeros(self.n_t - antenna_index)))
+                                        np.zeros(self.n_t - antenna_index, dtype=complex)))
             transmit_frame[index * step_size : index * step_size + step_size] = sm_symbol
         return transmit_frame
 
@@ -439,7 +440,7 @@ class ChannelEstimator:
 
     def generate_zadoffchu_sequence(self, root_index, sequence_length):
         """ Function to create a Zadoff-Chu sequence of a given root index and size. """
-        return np.exp((-1j * np.pi * root_index * np.arange(sequence_length) * (np.arange(sequence_length) + 1)) / sequence_length)
+        return np.exp((-1j * np.pi * root_index * np.arange(sequence_length) * (np.arange(sequence_length) + 2)) / sequence_length)
 
     def create_flc_frame(self, sequence):
         """ Function to create a transmission frame used for the Fixed-Lag-Correlation. """
@@ -470,13 +471,16 @@ class ChannelEstimator:
         mid = int(self.frame_length * self.sps / 2)
         # Use the first and third quarter for the phase comparison.
         points = signal[: int(mid / 2)] * np.conj(signal[mid : int(mid / 2) + mid])
+        #points = np.correlate(signal[: mid], signal[mid :], 'full')
         phase_difference = -np.angle(points)
+        """
+        plt.figure()
+        plt.title('Phase of the FLC')
+        #plt.plot(np.abs(y[receive_antenna]), 'm-<')
+        plt.plot(phase_difference, 'm-<')
+        plt.show()
+        """
         return (np.mean(phase_difference) * self.sample_rate / (2 * np.pi * mid))
-
-    def estimate_phase_offset(self, point):
-        """ Function to estimate the phase offset for the proposed estimation scheme. """
-        # The phase of the correlation maximum is the phase-offset.
-        return np.angle(point)
 
     def estimate_frame(self, signal):
         """ Function to synchronize a signal in the time domain. """
@@ -501,19 +505,6 @@ class ChannelEstimator:
                 signal[index] = element * np.exp(-2j * np.pi * frequency_offset * index / self.sample_rate)
         return signal
 
-    def sync_phase_offset(self, signal, phase_offset):
-        """ Function to synchronize a signal with a given phase offset. """
-        return signal * np.exp(-1j * phase_offset)
-
-    def synchronize(self, signal, c_prime, sps):
-        """ Concatenation of the synchronization methods. """
-        # Synchronize frequency-offset first.
-        frequency_offset = self.estimate_frequency_offset(signal, sps)
-        signal = self.synchronize_phase_offset(signal, frequency_offset)
-        # Correlate
-        signal = np.correlate(signal, c_prime, mode='full')
-        return
-
     def extract_channel(self, correlated_channel_responses):
         """ Function to estimate a channel based on a correlation representing a channel response. """
         channel_matrix = np.array([])
@@ -524,7 +515,7 @@ class ChannelEstimator:
             multipaths.append([])
             best_path = max(antenna_response)
             # Threshold depends on sequence length and noise.
-            threshold = 0.35 * best_path
+            threshold = 0.15 * best_path
             for val in antenna_response:
                 if val > threshold:
                     multipaths[index].append(val / best_path)
@@ -585,7 +576,12 @@ class ChannelEstimator:
                 fastest_path = multipaths[ra][0][1]
             for path in multipaths[ra]:
                 path[1] = path[1] - fastest_path
-                #print(path[1])
+                # Changes for each multipath, should provide longest distance.
+                longest_distance = path[1] - fastest_path
+            for index in range(0, longest_distance):
+                if index not in [x[1] for x in multipaths[ra]]: #for path in multipaths[ra]:
+                    multipaths[ra].append([0.0, index])
+            multipaths[ra].sort(key=lambda x: int(x[1]))
         nb_multipaths = max(counter)
         #print(nb_multipaths)
         #print(multipaths[0][: 10])
