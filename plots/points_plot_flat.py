@@ -83,8 +83,25 @@ p9_2x1_4 = [0.113915, 0.067285, 0.03384375, 0.01485625, 0.005395, 0.0017775, 0.0
 p9_2x2_2 = [0.1620925, 0.1056225, 0.05804125, 0.026085, 0.0092025, 0.00277625, 0.00070625, 0.000125, 2.875e-05, 0.0, 0.0]
 p9_2x2_4 = [0.076605, 0.03575, 0.01219375, 0.003305, 0.0005875, 0.00011, 8.75e-06, 0.0, 0.0, 0.0, 0.0]
 
+
+# NORMALIZED:
+norm12 = [0.2507375, 0.1909625, 0.1348, 0.0875375, 0.0517875, 0.0275375, 0.013, 0.0055, 0.002325, 0.0010875, 0.0005625]
+norm14 = [0.24675, 0.192425, 0.1363375, 0.0873125, 0.0523, 0.0271, 0.0142625, 0.0059375, 0.0024125, 0.0009375, 0.0004]
+norm12l = [0.24643625, 0.1920525, 0.13628125, 0.08783875, 0.0513425, 0.0268675, 0.01331, 0.00604375, 0.00265375, 0.00114375, 0.00049125, 0.0001925, 8.25e-05, 3.375e-05, 1.125e-05, 2.5e-06]#[0.247875, 0.1921625, 0.1347125, 0.0871375, 0.0527875, 0.0263375, 0.0137875, 0.0063875, 0.002225, 0.0012625, 0.0004875, 0.0001625, 0.0001875, 0.0, 0.0, 0.0]
+norm14l = [0.249325, 0.189175, 0.136575, 0.0864875, 0.0510125, 0.027025, 0.0136375, 0.0056375, 0.0028375, 0.001, 0.0006125, 0.00035, 0.0001375, 2.5e-05, 8.75e-05, 0.0]
+
+#normx32 =[0.344475, 0.30585, 0.2500875, 0.194375, 0.1308875, 0.074725, 0.0348625, 0.0130625, 0.0039375, 0.0009875, 0.0001375]
+norm32l =  [0.3982125, 0.3650625, 0.3257625, 0.2789125, 0.21915, 0.158075, 0.097375, 0.051925, 0.0213, 0.0080625, 0.0021625, 0.0003, 1.25e-05, 1.0e-06, 0.0, 0.0]
+#normx34 =[0.310825, 0.257025, 0.1975125, 0.13645, 0.070125, 0.03055, 0.0096375, 0.002025, 0.000275, 3.75e-05, 0.0]
+norm34l = [0.373575, 0.3350875, 0.2881625, 0.2288875, 0.164275, 0.1033875, 0.0490375, 0.0183625, 0.004725, 0.0009875, 0.0000625, 1.0e-06, 1.0e-07, 0.0, 0.0, 0.0]
+
+norm72l = [0.4554375, 0.4405, 0.4241375, 0.4007, 0.3719625, 0.3396375, 0.3018875, 0.248, 0.192325, 0.132775, 0.0782875, 0.0375, 0.0160875, 0.004325, 0.0014, 0.0003375]
+norm74l = [0.4375375, 0.421175, 0.3966, 0.3674375, 0.33005, 0.2817125, 0.22635, 0.1670125, 0.1040875, 0.0524625, 0.01995, 0.006525, 0.00125, 0.000175, 2.5e-05, 3.0e-06]
+
+
 # BER is measured for the following SNRs.
-steps = np.arange(0, 22, 2)
+#steps = np.arange(0, 22, 2)
+steps2 = np.arange(0, 32, 2)
 
 # Plot the results in a BER over SNR plot.
 plt.figure(1)
@@ -118,64 +135,82 @@ plt.yscale('log')
 plt.grid()
 plt.legend()
 """
-plt.subplot(121)
+#plt.subplot(121)
 plt.title('MIMO-setup: 2x2')
 #plt.plot(steps, gp_2, 'r-')
 #plt.plot(steps, gp_4, 'g-')
 #plt.plot(steps, new_points2x2_2, 'r-<', label='P=3, M=2')
 #plt.plot(steps, new_points2x2_4, 'b-o', label='P=3, M=4')
-plt.plot(steps, p2_2x2_2, 'k-<', label='P=2, M=2')
-plt.plot(steps, p2_2x2_4, 'k-o', label='P=2, M=4')
-plt.plot(steps, p3_2x2_2, 'r-<', label='P=3, M=2')
-plt.plot(steps, p3_2x2_4, 'b-o', label='P=3, M=4')
+#plt.plot(steps, p2_2x2_2, 'k-<', label='P=2, M=2')
+#plt.plot(steps, p2_2x2_4, 'k-o', label='P=2, M=4')
+#plt.plot(steps, p3_2x2_2, 'r-<', label='P=3, M=2')
+#plt.plot(steps, p3_2x2_4, 'b-o', label='P=3, M=4')
 #plt.plot(steps, new_points2x2_2_128 , 'g-<', label='K=128, M=2')
 #plt.plot(steps, new_points2x2_4_128, 'g-o', label='K=128, M=4')
 #plt.plot(steps, flat2x2_2, 'k-<', label='P=1, M=2')
 #plt.plot(steps, flat2x2_4, 'g--o', label='P=1, M=4')
-plt.plot(steps, p4_2x2_2, 'm-<', label='P=4, M=2')
-plt.plot(steps, p4_2x2_4, 'm-o', label='P=4, M=4')
-plt.plot(steps, p5_2x2_2, 'g-<', label='P=5, M=2')
-plt.plot(steps, p5_2x2_4, 'g-o', label='P=5, M=4')
+#plt.plot(steps, p4_2x2_2, 'm-<', label='P=4, M=2')
+#plt.plot(steps, p4_2x2_4, 'm-o', label='P=4, M=4')
+#plt.plot(steps, p5_2x2_2, 'g-<', label='P=5, M=2')
+#plt.plot(steps, p5_2x2_4, 'g-o', label='P=5, M=4')
 #plt.plot(steps, p7_2x2_2, 'c-<', label='P=7, M=2')
 #plt.plot(steps, p7_2x2_4, 'c-o', label='P=7, M=4')
 #plt.plot(steps, p9_2x2_2, 'y-<', label='P=9, M=2')
 #plt.plot(steps, p9_2x2_4, 'y-o', label='P=9, M=4')
-plt.axis([0, 20, 0.00001, 1])
+
+#plt.plot(steps, norm12, 'g-<', label='P=1, M=2')
+#plt.plot(steps, norm14, 'g-o', label='P=1, M=4')
+plt.plot(steps2, norm12l, 'g-<', label='P=1, M=2')
+plt.plot(steps2, norm12l, 'g-o', label='P=1, M=4')
+plt.plot(steps2, norm32l, 'r-<', label='P=3, M=2')
+plt.plot(steps2, norm34l, 'b-o', label='P=3, M=4')
+plt.plot(steps2, norm72l, 'c->', label='P=7, M=2')
+plt.plot(steps2, norm74l, 'c-o', label='P=7, M=4')
+#plt.axis([0, 20, 0.00001, 1])
+plt.axis([0, 30, 0.00001, 1])
 plt.xlabel('SNR / dB')
 plt.yscale('log')
 plt.grid()
 plt.legend()
 
-plt.subplot(122)
-plt.title('MIMO-setup: 2x2')
+#plt.subplot(122)
+#plt.title('MIMO-setup: 2x2')
 #plt.plot(steps, gp_2, 'r-')
 #plt.plot(steps, gp_4, 'g-')
 #plt.plot(steps, new_points2x2_2, 'r-<', label='P=3, M=2')
 #plt.plot(steps, new_points2x2_4, 'b-o', label='P=3, M=4')
-plt.plot(steps, p2_2x2_2, 'k-<', label='P=2, M=2')
-plt.plot(steps, p2_2x2_4, 'k-o', label='P=2, M=4')
-plt.plot(steps, p3_2x2_2, 'r-<', label='P=3, M=2')
-plt.plot(steps, p3_2x2_4, 'b-o', label='P=3, M=4')
+#plt.plot(steps, p2_2x2_2, 'k-<', label='P=2, M=2')
+#plt.plot(steps, p2_2x2_4, 'k-o', label='P=2, M=4')
+#plt.plot(steps, p3_2x2_2, 'r-<', label='P=3, M=2')
+#plt.plot(steps, p3_2x2_4, 'b-o', label='P=3, M=4')
 #plt.plot(steps, new_points2x2_2_128 , 'g-<', label='K=128, M=2')
 #plt.plot(steps, new_points2x2_4_128, 'g-o', label='K=128, M=4')
 #plt.plot(steps, flat2x2_2, 'k-<', label='P=1, M=2')
 #plt.plot(steps, flat2x2_4, 'g--o', label='P=1, M=4')
-plt.plot(steps, p4_2x2_2, 'm-<', label='P=4, M=2')
-plt.plot(steps, p4_2x2_4, 'm-o', label='P=4, M=4')
-plt.plot(steps, p5_2x2_2, 'g-<', label='P=5, M=2')
-plt.plot(steps, p5_2x2_4, 'g-o', label='P=5, M=4')
+#plt.plot(steps, p4_2x2_2, 'm-<', label='P=4, M=2')
+#plt.plot(steps, p4_2x2_4, 'm-o', label='P=4, M=4')
+#plt.plot(steps, p5_2x2_2, 'g-<', label='P=5, M=2')
+#plt.plot(steps, p5_2x2_4, 'g-o', label='P=5, M=4')
 #plt.plot(steps, p7_2x2_2, 'c-<', label='P=7, M=2')
 #plt.plot(steps, p7_2x2_4, 'c-o', label='P=7, M=4')
 #plt.plot(steps, p9_2x2_2, 'y-<', label='P=9, M=2')
 #plt.plot(steps, p9_2x2_4, 'y-o', label='P=9, M=4')
-plt.axis([5, 8, 0.001, 0.1])
-plt.xlabel('SNR / dB')
-plt.ylabel('BER')
-plt.yscale('log')
-plt.grid()
-plt.legend()
+
+#plt.plot(steps, norm12, 'g-<', label='P=1, M=2')
+#plt.plot(steps, norm14, 'g-o', label='P=1, M=4')
+#plt.plot(steps, norm32, 'r-<', label='P=3, M=2')
+#plt.plot(steps, norm34, 'b-o', label='P=3, M=4')
+#plt.plot(steps, norm72, 'c->', label='P=7, M=2')
+#plt.plot(steps, norm74, 'c-o', label='P=7, M=4')
+
+#plt.axis([5, 8, 0.001, 0.1])
+#plt.xlabel('SNR / dB')
+#plt.ylabel('BER')
+#plt.yscale('log')
+#plt.grid()
+#plt.legend()
 
 #plt.show()
 
 from matplotlib2tikz import save as tikz_save
-tikz_save('../master-thesis/figures/detector_p7.tex', figureheight='9.5cm', figurewidth='7.5cm');
+tikz_save('../master-thesis/figures/detector_np7.tex', figureheight='9.5cm', figurewidth='14.5cm');

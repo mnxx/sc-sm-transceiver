@@ -24,12 +24,12 @@ def main():
     # Initiate constants used in this test.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
     n_r = int(sys.argv[1])
-    setup = (128, n_r)
+    setup = (2, n_r)
     # Frame length of the transmission - K symbols for each transmission.
     #k = 4
     k = int(sys.argv[2])
     # Number of multipath links.
-    p = 3
+    p = 7
     # Length of the Zero-Prefix.
     zp_len = p - 1
     # Signal to Noise Ratio.
@@ -57,7 +57,8 @@ def main():
     rounds = int(sys.argv[4])
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    steps =  [22, 24, 26, 28, 30]
     #steps = [50]
     # The resulting BER values are stored in a list.
     points = []
