@@ -34,7 +34,7 @@ class MIMOChannel:
         for _ in range(0, self.multipaths):
             # Number of rows and columns of each sub-matrix is N_r and N_t.
             self.sub_matrices[_] = (np.random.randn(self.n_r, self.n_t)
-                                    + 1j * np.random.randn(self.n_r, self.n_t)) / np.sqrt(2)
+                                    + 1j * np.random.randn(self.n_r, self.n_t)) / np.sqrt(2) / self.multipaths
         # Create 4-dimensional matrix using the sub-matrices.
         self.channel_matrix = np.zeros((nb_rows, self.n_r, nb_columns, self.n_t),
                                        dtype=self.sub_matrices[0].dtype)
@@ -266,6 +266,17 @@ class CustomChannel(MIMOChannel):
         # Flatten the 4-dimensional matrix.
         self.channel_matrix.shape = (nb_rows * sps * self.n_r, nb_columns * sps * self.n_t)
         #print(self.channel_matrix[: 24, : 2])
+        #print(self.channel_matrix[: 5, : 9])
+
+    def recreate_channel_matrix(self, sps):
+        """ Rereate the channel matrix based on a custom channel model. """
+        rows = int(self.channel_matrix.shape[0] / sps)
+        columns = int(self.channel_matrix.shape[1] / sps)
+        recreation = np.zeros((rows, columns), dtype=complex)
+        for row_element in range(0, rows):
+            for column_element in range(0, columns):
+                recreation[row_element, column_element] = self.channel_matrix[row_element * sps, column_element * sps]
+        return recreation
 
 class HardCodedChannel(MIMOChannel):
     """ Class defining hard coded channel scenarios to facilitate analyses. """
