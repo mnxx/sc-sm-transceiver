@@ -10,14 +10,14 @@ For a more conclusive analysis of the overall scheme and its detector, different
 ## Structure
 
 ### Modules
-- 'channel.py' - implementation of different MIMO channel scenarios.
-- 'modulation.py' - implementation of linear modulation schemes.
-- 'sc_sm_transceiver.py' - implementation of the transceiver, detector and channel estimation.
+- `channel.py` - implementation of different MIMO channel scenarios.
+- `modulation.py` - implementation of linear modulation schemes.
+- `sc_sm_transceiver.py` - implementation of the transceiver, detector and channel estimation.
 
 ### Complete Tests
-- 'test_scheme.py' - test the detector with perfect channel estimation.
-- 'test_system.py' - test the complete transmission scheme.
-- 'test_unfiltered.py' - test the complete transmission sans filters.
+- `test_scheme.py` - test the detector with perfect channel estimation.
+- `test_system.py` - test the complete transmission scheme.
+- `test_unfiltered.py` - test the complete transmission sans filters.
 
 ### Folder 'tests'
 This folder contains tests for previous steps in the development.
