@@ -119,4 +119,3 @@ class QPSK(Modulation):
                 raise Exception
         except Exception:
             print("Symbol did not match QPSK-symbol criteria: " + str(symbol))
-

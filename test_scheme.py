@@ -30,8 +30,6 @@ def main():
     k = int(sys.argv[2])
     # Number of multipath links.
     p = 7
-    # Length of the Zero-Prefix.
-    zp_len = p - 1
     # Signal to Noise Ratio.
     snr = 0
     # M algorithm: breadth-first search with M survivors.
@@ -50,6 +48,7 @@ def main():
     # Detect the sent frame using the M-algorithm based LSS-ML detector.
     detector = det(setup, m)
 
+    # Length of an SM symbol.
     symbol_len = 1 + int(np.log2(setup[0]))
 
     # LOOP FOR TESTING PURPOSES.
@@ -58,8 +57,7 @@ def main():
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    steps =  [22, 24, 26, 28, 30]
-    #steps = [50]
+    steps = [50]
     # The resulting BER values are stored in a list.
     points = []
     start = time.time()
@@ -70,11 +68,8 @@ def main():
         #channel.set_snr(step - 3 * (setup[1] - 1))
         channel.set_snr(step - 3 * int(np.log2(setup[1])))
         #channel.set_snr(step)
-        #channel.create_channel_matrix()
         for _ in range(0, rounds):
             channel.create_channel_matrix()
-            #tx_frame = transceiver.create_transmission_frame(k)
-            #tx_frame = transceiver.transmit_frame(k, zp_len)
             # Test with random data bits.
             data_frame = np.random.randint(0, 2, k * symbol_len).tolist()
             # Convert bits into spatial modulation symbols.
@@ -92,12 +87,6 @@ def main():
                                              rx_frame)
 
             # Show the number of bit errors which occurred.
-            #tx_frame = tx_frame.flatten()
-            #detected_frame = [symbol for sm_symbol in detected_frame for symbol in sm_symbol]
-            #for index in range(0, k * setup[0]):
-            #    if tx_frame[index] != detected_frame[index]:
-            #        count += 1
-            # Show the number of bit errors which occurred.
             detected_bits = []
             for sm_symbol in detected_frame:
                 temp = transceiver.sm_demodulation(sm_symbol)
@@ -112,13 +101,6 @@ def main():
                     count += 1
         # BER calculation.
         ber = count / (k * symbol_len * rounds)
-        # Measure the passed time.
-        #diff = time.time() - start
-        # Write result in console.
-        #print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
-        #      + "> BER = " + str(ber) + "\n"
-        #      + "> In " + str(diff) + " seconds.")
-        # Append result to the list.
         points.append(ber)
     # Print the results for different SNRs.
     diff = time.time() - start

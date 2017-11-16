@@ -26,20 +26,15 @@ def main():
     """ Main function. """
     # Initiate constants used in the transmission.
     # Antenna setup: Number of transmit antennas, number of reception antennas (N_t, N_r).
-    #n_r = int(sys.argv[1])
     setup = (2, 2)
     # Frame length of the transmission - K symbols for each transmission.
     #k = 1024
     k = int(sys.argv[1])
     # Number of multipath links.
     p = 3
-    # Length of the Zero-Prefix.
-    #zp_len = p - 1
     # Signal to Noise Ratio.
-    #snr = int(sys.argv[1])
     snr = 0
     # M algorithm: breadth-first search with M survivors.
-    #m = int(sys.argv[2])
     #m = 4
     m = int(sys.argv[2])
     # Sample rate.
@@ -77,9 +72,7 @@ def main():
 
     # Loops.
     nb_channels = 1
-    #nb_channels = 1
     rounds = 1
-    #rounds = 1
     # BER is measured for the following SNRs.
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40]
     #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
@@ -119,36 +112,27 @@ def main():
                 #tx_frame = transceiver.upsampling(sps, channel_estimator.create_flc_frame(c))
                 tx_frame = channel_estimator.create_flc_frame(c)
                 c_prime = transceiver.upsampling(sps, channel_estimator.create_flc_prime(c))
+                # Hard coded SM symbol creation for training phase with 2 tx antennas.
                 if transmit_antenna == 0:
-                    blocks = [[[0],[0]]] * k
+                    blocks = [[[0], [0]]] * k
                 else:
-                    blocks =  [[[1],[1]]] * k
+                    blocks = [[[1], [1]]] * k
                 tx_frame = transceiver.frame_sm_modulation(blocks, tx_frame)
                 tx_frame = np.reshape(tx_frame, (setup[0], int(tx_frame.size / setup[0])), 'F')
                 upsampled_frame = np.zeros((setup[0], tx_frame[0].size * sps), dtype=complex)
                 pulse = np.zeros((setup[0], tx_frame[0].size * sps + span * sps - 1), dtype=complex)
-                for ta in range(0, setup[0]):
-                    upsampled_frame[ta] = transceiver.upsampling(sps, tx_frame[ta])
-                    pulse[ta] = transceiver.rrc_filter(1, span, sps, upsampled_frame[ta])
-                #pulse = np.reshape(pulse, pulse.size, 'F')
+                for tx_antenna in range(0, setup[0]):
+                    upsampled_frame[tx_antenna] = transceiver.upsampling(sps, tx_frame[tx_antenna])
+                    pulse[tx_antenna] = transceiver.rrc_filter(1, span, sps,
+                                                               upsampled_frame[tx_antenna])
                 tx_pulse = np.zeros(pulse.size, dtype=complex)
                 for index in range(0, int(tx_pulse.size / sps / setup[0])):
-                    for ta in range(0, setup[0]):
-                        pos = index * sps * setup[0] + ta * sps
-                        tx_pulse[pos : pos + sps] = pulse[ta][index * sps : index * sps + sps]
-                #print(tx_pulse[: 13])
-                #tx_frame = transceiver.upsampling(sps, tx_frame)
-                #pulse = transceiver.upsampled_sm_modulation(blocks, pulse, sps)
-                # Pulse shape the training frame using an RRC-Filter.
-                #pulse = transceiver.rrc_filter(1, span, sps, tx_frame)
-                #pulse = tx_frame
+                    for tx_antenna in range(0, setup[0]):
+                        pos = index * sps * setup[0] + tx_antenna * sps
+                        tx_pulse[pos : pos + sps] = pulse[tx_antenna][index * sps :
+                                                                      index * sps + sps]
                 # Apply a frequency offset.
                 rx_frame = channel.apply_frequency_offset(tx_pulse, sample_rate, f_off)
-                #rx_frame = tx_pulse
-                # TO IMPROVE:
-                # Create and apply channel matrix for this transmit antenna.
-                #channel.create_ta_channel_matrix(sps, transmit_antenna)
-                #rx_frame = channel.apply_ta_channel_without_awgn(rx_frame)
                 rx_frame = channel.apply_channel_without_awgn(rx_frame[: k * setup[0] * sps])
                 # Add AWGN to the signal.
                 rx_frame = rx_frame + channel.add_awgn(rx_frame.size)
@@ -163,121 +147,82 @@ def main():
                         path[index * sps : index * sps + sps] = rx_frame[position : position + sps]
                     # Matched filtering of the path from a transmit antenna to a receive antenna.
                     y.append(transceiver.rrc_filter(1, span, sps, path))
-                    #y.append(path)
                     # Estimate the frequency offset.
                     estimated_f_off = channel_estimator.estimate_frequency_offset(y[receive_antenna])
-                    print(estimated_f_off)
+                    #print(estimated_f_off)
                     # Get rid of frequency-offset.
-                    #y[receive_antenna] = channel_estimator.sync_frequency_offset(y[receive_antenna], estimated_f_off)
                     # Analyze the channel impulse response for the particular path by correlation.
-                    #y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
-                    #y[receive_antenna] = y[receive_antenna] / np.sqrt(np.sum(np.abs(y[receive_antenna])**2))
-                    #"""
-                    #plt.figure()
-                    #plt.subplot(2,1,1)
-                    delayed = np.concatenate((np.zeros(64*sps), y[receive_antenna]))
-                    plt.title('FLC for link - RA: ' + str(receive_antenna + 1) + ', TA: ' + str(transmit_antenna + 1))
-                    #plt.plot(np.abs(y[receive_antenna]), 'm-<')
-                    mid = int(k * sps / 2)
-                    # Use the first and third quarter for the phase comparison.
-                    #points = y[receive_antenna][10 : int(mid / 2)] * np.conj(y[receive_antenna][mid + 10 : int(mid / 2) + mid])
-                    points = np.correlate(delayed[: mid], delayed[mid :], 'full')
-                    points = points / np.sqrt(np.sum(np.abs(points)**2))
-                    phase_difference = -np.angle(points)
-                    plt.plot(np.abs(points), 'c-')
-                    plt.grid()
-                    #plt.subplot(2,1,2)
-                    #plt.plot(phase_difference, 'm-')
-                    #plt.grid()
-                    #plt.show()
-                    from matplotlib2tikz import save as tikz_save
-                    tikz_save('../master-thesis/figures/flc_frame.tex', figureheight='5cm', figurewidth='14.5cm');
-                    exit()
-                    #"""
-                    zone =int((y[receive_antenna].size - np.mod(y[receive_antenna].size, sps)) / 2) - 1 * sps +1
+                    y[receive_antenna] = np.correlate(y[receive_antenna], c_prime, mode='full')
+                    y[receive_antenna] = (y[receive_antenna]
+                                          / np.sqrt(np.sum(np.abs(y[receive_antenna])**2)))
+                    #delayed = np.concatenate((np.zeros(64*sps), y[receive_antenna]))
+                    zone = int((y[receive_antenna].size
+                                - np.mod(y[receive_antenna].size, sps)) / 2) - 1 * sps + 1
                     y[receive_antenna] = y[receive_antenna][zone : zone + 10 * sps]
-                    y[receive_antenna] = np.reshape(y[receive_antenna], (sps, int(y[receive_antenna].size / sps)), 'F')
-                    """
-                    plt.subplot(2,2, 2*transmit_antenna + receive_antenna+1)
-                    #plt.title('Polyphase-cross-correlation: RA: ' + str(receive_antenna) + ', TA: ' + str(transmit_antenna))
-                    plt.plot(np.abs(y[receive_antenna][0][:]), 'k-<')
-                    plt.plot(np.abs(y[receive_antenna][1][:]), 'b-<')
-                    plt.plot(np.abs(y[receive_antenna][2][:]), 'g-<')
-                    plt.plot(np.abs(y[receive_antenna][3][:]), 'r-<')
-                    if transmit_antenna == 1:
-                        plt.xlabel('Taps / 10ns')
-                    plt.grid()
-                    """
-                    #plot_list.append(y[receive_antenna])
+                    y[receive_antenna] = np.reshape(y[receive_antenna],
+                                                    (sps, int(y[receive_antenna].size / sps)),
+                                                    'F')
                 # Estimate frame using the channel impulse response with the most energy.
                 # TO IMPROVE: USE THE BEST OVERALL CHOICE.
                 samples_to_use = channel_estimator.estimate_frame(y[0])
-                #print(samples_to_use)
-                channel_response_list.append(channel_estimator.extract_channel_response(y, samples_to_use))
+                channel_response_list.append(channel_estimator.extract_channel_response(y,
+                                                                                        samples_to_use))
             # Recreate the channel matrix from the channel impulse vector for each transmit antenna.
             # Channel matrix is 'deformed' because it includes the filters' impulse responses.
-            #plt.suptitle('Polyphase-cross-correlation - MIMO-setup: 2x2.')
-            #plt.show()
-            #from matplotlib2tikz import save as tikz_save
-            #tikz_save('../master-thesis/figures/poly_frame_bad.tex', figureheight='6cm', figurewidth='7.5cm');
-
             estimated_channel = channel_estimator.recreate_channel(channel_response_list)
-            print(estimated_channel[: 16, : 2])
-            #print(estimated_channel.shape)
-            #print(samples_to_use)
             # DATA TRANSMISSION PHASE:
             for _ in range(0, rounds):
                 # TRANSMISSION:
                 # Test with random data bits (ONE FRAME / PULSE SHAPING IS NEEDED FOR EACH FRAME).
                 data_frame = np.random.randint(0, 2, k * setup[0]).tolist()
-                #data_frame = [1, 1, 1, 1] * 512
-                #data_frame = np.ones(2048, dtype=int).tolist()
                 blocks = transceiver.data_to_blocks(data_frame)
                 modulated_symbols = modulation.modulate([block[1] for block in blocks])
                 # Add antenna information for channel simulation.
                 tx_data_frame = transceiver.frame_sm_modulation(blocks, modulated_symbols)
-                tx_data_frame = np.reshape(tx_data_frame, (setup[0], int(tx_data_frame.size / setup[0])), 'F')
-                upsampled_data_frame = np.zeros((setup[0], tx_data_frame[0].size * sps), dtype=complex)
-                data_pulse = np.zeros((setup[0], tx_data_frame[0].size * sps + span * sps - 1), dtype=complex)
+                tx_data_frame = np.reshape(tx_data_frame,
+                                           (setup[0], int(tx_data_frame.size / setup[0])),
+                                           'F')
+                upsampled_data_frame = np.zeros((setup[0], tx_data_frame[0].size * sps),
+                                                dtype=complex)
+                data_pulse = np.zeros((setup[0], tx_data_frame[0].size * sps + span * sps - 1),
+                                      dtype=complex)
                 for transmit_antenna in range(0, setup[0]):
-                    upsampled_data_frame[transmit_antenna] = transceiver.upsampling(sps, tx_data_frame[transmit_antenna])
-                    data_pulse[transmit_antenna] = transceiver.rrc_filter(1, span, sps, upsampled_data_frame[transmit_antenna])
-                #data_pulse = np.reshape(data_pulse, data_pulse.size, 'F')
+                    upsampled_data_frame[transmit_antenna] = transceiver.upsampling(sps,
+                                                                                    tx_data_frame[transmit_antenna])
+                    data_pulse[transmit_antenna] = transceiver.rrc_filter(1, span, sps,
+                                                                          upsampled_data_frame[transmit_antenna])
                 tx_data_pulse = np.zeros(data_pulse.size, dtype=complex)
                 for index in range(0, int(tx_data_pulse.size / sps / setup[0])):
-                    for ta in range(0, setup[0]):
-                        pos = index * sps * setup[0] + ta * sps
-                        tx_data_pulse[pos : pos + sps] = data_pulse[ta][index * sps : index * sps + sps]
-                #print(data_pulse.shape)
-                #pulse = transceiver.upsampling(sps, np.array(modulated_symbols))
+                    for tx_antenna in range(0, setup[0]):
+                        pos = index * sps * setup[0] + tx_antenna * sps
+                        tx_data_pulse[pos : pos + sps] = data_pulse[tx_antenna][index * sps :
+                                                                                index * sps + sps]
                 # Apply a frequency offset on pulse.
-                #pulse = channel.apply_frequency_offset(pulse, sample_rate, 200)
+                tx_data_pulse = channel.apply_frequency_offset(tx_data_pulse, sample_rate, f_off)
                 # Apply fading channel.
-                #rx_data_pulse = channel.apply_composed_channel(sps, data_pulse)
                 rx_data_pulse = channel.apply_channel_without_awgn(tx_data_pulse[: 1024])
                 # Apply AWGN.
                 rx_data_pulse = rx_data_pulse + channel.add_awgn(rx_data_pulse.size)
                 # RECEPTION:
                 # Split into receive antennas.
-                rx_data_frame = np.zeros((setup[1], int((rx_data_pulse.size + setup[1] * span * sps - 1) / setup[1] / sps)), dtype=complex)
+                rx_data_frame = np.zeros((setup[1],
+                                          int((rx_data_pulse.size + setup[1] * span * sps - 1)
+                                              / setup[1] / sps)),
+                                         dtype=complex)
                 # Synchronization and downsampling for each receive antenna.
-                print(rx_data_pulse[: 16])
                 for receive_antenna in range(0, setup[1]):
                     data_path = np.zeros((int(rx_data_pulse.size / setup[1])), dtype=complex)
                     for index in range(0, int(data_path.size / sps)):
                         position = (index * setup[1] + receive_antenna) * sps
-                        data_path[index * sps : index * sps + sps] = rx_data_pulse[position : position + sps]
+                        data_path[index * sps : index * sps + sps] = rx_data_pulse[position :
+                                                                                   position + sps]
                     # Matched filtering of the synchronized frame for each receive antenna.
-                    print(data_path[:12])
                     data_path = transceiver.rrc_filter(1, span, sps, data_path)
                     # Get rid of frequency-offset.
-                    #data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
+                    data_path = channel_estimator.sync_frequency_offset(data_path, estimated_f_off)
                     # Synchronize frames while downsampling.
-                    #print(data_path[:20])
                     rx_data_frame[receive_antenna] = channel_estimator.sync_frame_offset(data_path, 1) #samples_to_use)
                 rx_data_frame = rx_data_frame.flatten('F')
-                #print(rx_data_frame[: 12])
-                #perf_ce = channel.get_channel_matrix()[p * setup[1] * sps : setup[0] * sps]
                 # Detect the sent frame using the M-algorithm based LSS-ML detector.
                 detected_data_frame = detector.detect(k,
                                                       transceiver.get_symbol_list(),
@@ -293,20 +238,11 @@ def main():
                     modulated_info = modulation.demodulate(temp[-1])
                     # Append demodulated bits to the result.
                     detected_bits = detected_bits + antenna_info + modulated_info
-                #print(data_frame[-10 : -1])
-                #print(detected_bits[-10 : -1])
                 for index in range(0, k * setup[0]):
                     if data_frame[index] != detected_bits[index]:
                         count += 1
         # BER calculation.
         ber = count / (k * setup[0] * rounds * nb_channels)
-        # Measure the passed time.
-        #diff = time.time() - start
-        # Write result in console.
-        #print(str(count) + " bits in " + str(rounds) + " tests were wrong!\n"
-        #      + "> BER = " + str(ber))
-        #      + "> In " + str(diff) + " seconds.")
-        # Append result to the list.
         points.append(ber)
     # Print the results for different SNRs.
     print("***** K = " + str(k))

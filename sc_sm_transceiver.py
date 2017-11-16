@@ -12,7 +12,6 @@
 
 import random
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def flatten_list(given_list_of_lists):
@@ -81,8 +80,6 @@ class Transceiver:
             # For now: Use sequences from 2 onward.
             training_sequence = training_sequences[sequence_index + 2]
             # Split training sequence into blocks and concatenate with the previous sequences.
-            # IF SHAPE TWO-DIMENSIONAL: Flatten the given list.
-            #list_to_split = flatten_list(given_list)
             symbols += split_list(training_sequence, self.modulation_index)
         return symbols
 
@@ -137,7 +134,10 @@ class Transceiver:
         return transmit_frame
 
     def upsampled_sm_modulation(self, blocks, modulated_symbols, sps):
-        """ Create Spatial Modulation symbols in an upsampled scenario. """
+        """
+        DEPRECATED: Faulty implementation of SM modulation w/ upsampling!
+        Create Spatial Modulation symbols in an upsampled scenario.
+        """
         transmit_frame = np.zeros(self.n_t * self.k * sps, dtype=complex)
         step_size = self.n_t * sps
         for index, block in enumerate(blocks):
@@ -151,31 +151,7 @@ class Transceiver:
                                                   np.zeros(sps * (self.n_t - antenna_index))))
             transmit_frame[index * step_size : index * step_size + step_size] = upsampled_sm_symbol
         return transmit_frame
-    """
-    def upsampled_sm_modulation_filtered(self, blocks, modulated_symbols, span, sps):
-        "" Create Spatial Modulation symbols in an upsampled scenario. 
-        transmit_frame = np.zeros(self.n_t * self.k * sps + self.n_t * (span * sps - 1), dtype=complex)
-        step_size = self.n_t * sps
-        #blocks = blocks + [[[0],[0]]] * (span - 1)
-        print(modulated_symbols.size)
-        print(len(blocks))
-        print(transmit_frame.size)
-        for index, block in enumerate(blocks):
-            # Convert list of bits into integer.
-            antenna_info = self.bits_to_index(block[0])
-            # Use SM symbol creation algorithm. Keep convention: Antenna inxdices start with 1.
-            antenna_index = antenna_info + 1
-            upsampled_sm_symbol = np.concatenate((np.zeros(sps * (antenna_index - 1)),
-                                                 modulated_symbols[index * sps : index * sps + sps]))
-            upsampled_sm_symbol = np.concatenate((upsampled_sm_symbol,
-                                                 np.zeros(sps * (self.n_t - antenna_index))))
-            transmit_frame[index * step_size : index * step_size + step_size] = upsampled_sm_symbol
-        additonal_start = len(blocks) * step_size
-        #for additional_index in range(span)a
-        for additional_samples in range(sps * len(blocks) + sps, modulated_symbols.size):
-            transmit_frame[]
-        return transmit_frame
-    """
+
     def training_symbols_to_frames(self, training_symbols):
         """ Function to create frames from modulated training symbols. """
         training_frame = []
@@ -185,7 +161,7 @@ class Transceiver:
         # has to imply a new spread sequence for each new antenna.
         for index, modulated_symbol in enumerate(training_symbols):
             training_frame.append(self.sm_modulation(int(index / seq_len), modulated_symbol))
-        # Assume symbols vector has size K * N_t (BPSK).
+        # Assume symbols vector has size of K * N_t.
         frame_list = split_list(flatten_list(training_frame), self.k * self.n_t)
         for index, frame in enumerate(frame_list):
             frame_list[index] = np.reshape(frame, (self.k * self.n_t, 1))
@@ -214,15 +190,20 @@ class Transceiver:
             frame.append(0)
         return frame
 
+    def remove_zero_pad(self, frame, prefix_len):
+        """ Remove the padding of a frame, i.e. a list of symbols. """
+        return frame[: len(frame) - prefix_len]
+
     def transmit_frame(self, k, prefix_len):
         """ Concatenation Function: Create a transmission frame, add a Zero-Pad. """
         frame = self.add_zero_pad(self.create_transmission_frame(k), prefix_len)
         # Reshape list to a numpy array in vector form (K * N_t, 1).
+        # Zero-padding redundant w/ current implementation model.
         return np.reshape(frame[: k * self.n_t], (k * self.n_t))
 
     def upsampling(self, rate, frame):
         """ Upsample a given frame with a given upsampling rate. """
-        # Frame should be a (x, 1) Numpy array.
+        # Frame should be a (x,) Numpy array.
         upsampled_frame = np.zeros((rate * frame.size), dtype=complex)
         for index, val in enumerate(frame):
             upsampled_frame[rate * index] = val
@@ -230,28 +211,32 @@ class Transceiver:
 
     def rrc_filter(self, beta, span, sps, frame):
         """ Root-Raised-Cosine-Filter: Interpolate and pulse shape a given frame. """
-        T_sample = 1.0 / self.sample_rate
-        T_s = sps * T_sample
-        factor = 1 / np.sqrt(T_s)
-        # Length of the filter is the number of symbols  multiplied by the number of samples per symbol.
+        t_sample = 1.0 / self.sample_rate
+        t_s = sps * t_sample
+        factor = 1 / np.sqrt(t_s)
+        # Length of the filter is number of symbols multiplied by number of samples per symbol.
         h_rrc = np.zeros(span * sps, dtype=float)
         for index in range(0, span * sps):
-            t = (index - span * sps / 2) * T_sample
+            t = (index - span * sps / 2) * t_sample
             if t == 0:
                 h_rrc[index] = factor * (1 - beta + (4 * beta / np.pi))
-            elif beta != 0 and t == T_s / 4 / beta:
-                h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
-            elif beta != 0 and t == -T_s / 4 / beta:
-                h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi) * np.sin(np.pi / 4 / beta) + (1 - 2 / np.pi) * np.cos(np.pi / 4 / beta))
+            elif beta != 0 and t == t_s / 4 / beta:
+                h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi)
+                                                             * np.sin(np.pi / 4 / beta)
+                                                             + (1 - 2 / np.pi)
+                                                             * np.cos(np.pi / 4 / beta))
+            elif beta != 0 and t == -t_s / 4 / beta:
+                h_rrc[index] = factor * beta / np.sqrt(2) * ((1 + 2 / np.pi)
+                                                             * np.sin(np.pi / 4 / beta)
+                                                             + (1 - 2 / np.pi)
+                                                             * np.cos(np.pi / 4 / beta))
             else:
-                h_rrc[index] = factor * ((np.sin(np.pi * t / T_s * (1 - beta)) + 4 * beta * t / T_s * np.cos(np.pi * t / T_s * (1 + beta))) /
-                                         (np.pi * t / T_s * (1 - (4 * beta * t / T_s)**2)))
+                h_rrc[index] = factor * ((np.sin(np.pi * t / t_s * (1 - beta))
+                                          + 4 * beta * t / t_s
+                                          * np.cos(np.pi * t / t_s * (1 + beta))) /
+                                         (np.pi * t / t_s * (1 - (4 * beta * t / t_s)**2)))
         h_rrc = h_rrc / np.sqrt(np.sum(np.abs(h_rrc)**2))
         return np.convolve(h_rrc, frame, 'full')
-
-    def remove_zero_pad(self, frame, prefix_len):
-        """ Remove the padding of a frame, i.e. a list of symbols. """
-        return frame[: len(frame) - prefix_len]
 
 
 class LSSDetector:
@@ -288,17 +273,14 @@ class LSSDetector:
         possible_first_metrics = []
         for index, possible_symbol in enumerate(symbol_list):
             # Reshape list to a numpy array in vector form (K * N_t,).
-            #print(str(len(possible_symbol)) + " ~ " + str(self.n_t) + " ~~ " + str(possible_symbol))
             x_m = np.reshape(possible_symbol, (self.n_t))
             # All H_x block-sub-matrices are N_r x N_t.
             h = channel[: self.n_r, : self.n_t]
             # Compute the metrics for each candidate vector.
             # Each metric is a tuple of the value and the symbol.
-            #print(str(rx_vector[: self.n_r].shape) + " ### " + str(h.shape) + " ## " + str(h.dot(x_m)) + " ### " + str(possible_symbol))
             metric = ((np.linalg.norm(rx_vector[: self.n_r] - h.dot(x_m)))**2, possible_symbol)
             possible_first_metrics.append(metric)
         possible_first_metrics.sort()
-        #print(possible_first_metrics)
         for m, metric in enumerate(possible_first_metrics[0 : self.M]):
             # Update the value of the accumulated metrics.
             e[m] = metric[0]
@@ -306,7 +288,8 @@ class LSSDetector:
             # Append the corresponding symbol to the list.
             D[m].append(metric[1])
             nb_paths += 1
-        # Subsequent steps allow for adoption of the same symbol, or change to better path with different symbol.
+        # Subsequent steps allow for adoption of the same symbol.
+        # Or change to better path with different symbol.
         for step in range(1, frame_len):
             # Each step we create a list of all the metrics resulting from the possible symbols.
             possible_metrics = []
@@ -317,24 +300,21 @@ class LSSDetector:
                     break
                 # Create separate list with the current symbols.
                 possible_symbol_vector = list(D[m])
-                #print("~ " + str(np.mod(count2, 4)) + " ~ " + str(possible_symbol_vector))
                 for possible_symbol in symbol_list:
                     # Add the possible symbol to the separate list.
                     possible_symbol_vector.append(possible_symbol)
                     # Reshape list to a numpy array in vector form (K * N_t,).
-                    #count += 1
                     x_m = np.reshape(possible_symbol_vector, (self.n_t * (step + 1)))
                     # All H_x block-sub-matrices are N_r x N_t.
                     h = channel[self.n_r * step : self.n_r * step + self.n_r,
                                 : self.n_t * step + self.n_t]
                     # Compute the metrics for each candidate vector.
                     # Each metric is a tuple of the value and m to keep the path information.
-                    #print(str(h.shape) + "  ÜÜÜ " + str(x_m) + " ÜÜÜ " + str(h.dot(x_m)) + " ÜÜÜ " + str(h.dot(x_m).shape))
-                    #print(str(rx_vector[2 * step : 2 * step + 2]) + " ** " + str(rx_vector[2 * step : 2 * step + step].shape))
-                    metric = (e[m] + (np.linalg.norm(rx_vector[self.n_r * step : self.n_r * step + self.n_r]
-                                                     - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
+                    metric = (e[m] +
+                              (np.linalg.norm(rx_vector[self.n_r * step : self.n_r * step + self.n_r]
+                                              - h.dot(x_m)))**2, m, possible_symbol_vector.pop())
                     # Avoid adding the same metric multiple times.
-                    # As the metric tuple includes m, different paths can have the same metric value.
+                    # As the metric tuple includes m, different paths can have same metric value.
                     if metric not in possible_metrics:
                         possible_metrics.append(metric)
             # Sort the accumulated metrics by their metric value.
@@ -365,31 +345,21 @@ class LSSDetector:
         # Final detection: Find the frame with the overall minimum metric of the M estimated frames.
         # This time the metric is calculated by a maximum likelihood detection.
         final_metric_list = []
-        #print(D[0][-3 :])
-        #print(D[1][-3 :])
-        #print(e[:2])
         for index, estimated_symbols in enumerate(D):
-            #print(str(len(estimated_symbols)) + " ~ " + str(self.n_t * frame_len) + " ~~ " + str(estimated_symbols))
             symbols = np.reshape(estimated_symbols, (self.n_t * frame_len))
             # Estimated channel might possess more or less multi-paths than actual channel.
             final_metric = ((np.linalg.norm(rx_vector[: channel.shape[0]]
                                             - channel[: rx_vector.size].dot(symbols))**2), index)
             final_metric_list.append(final_metric)
         final_metric_list.sort()
-        #print(final_metric_list)
         best_m = final_metric_list[0][1]
         # Return the Vector of the K * N_t symbols with the best overall metrics.
         return D[best_m]
 
-    def _single_stream_detect(self, D, e):
-        """ Function performing single-stream ML for each step in the detection. """
-
 
 class ChannelEstimator:
     """
-    Implementation of a channel estimation approach for the Single Carrier Spatial Modulation scheme.
-    Channel estimation is done by observing the channel impulse response, using a spreading sequence,
-    i.e. gold sequence, and subsequent correlation.
+    Implementation of two channel estimation approaches for Single-Carrier Spatial Modulation.
     """
 
     def __init__(self, antenna_setup, frame_length, sample_rate, samples_per_symbol):
@@ -440,7 +410,8 @@ class ChannelEstimator:
 
     def generate_zadoffchu_sequence(self, root_index, sequence_length):
         """ Function to create a Zadoff-Chu sequence of a given root index and size. """
-        return np.exp((-1j * np.pi * root_index * np.arange(sequence_length) * (np.arange(sequence_length) + 2)) / sequence_length)
+        return np.exp((-1j * np.pi * root_index * np.arange(sequence_length)
+                       * (np.arange(sequence_length) + 2)) / sequence_length)
 
     def create_flc_frame(self, sequence):
         """ Function to create a transmission frame used for the Fixed-Lag-Correlation. """
@@ -450,10 +421,8 @@ class ChannelEstimator:
         """ Function to create a transmission frame used for the Fixed-Lag-Correlation. """
         # Convention: Antenna indices start with 1.
         antenna_index = antenna_index + 1
-        #print(sequence[: 10])
         frame = np.concatenate((sequence, sequence))
         # The training data blocks are transformed to SM symbols for each antenna.
-        # NON-GENERIC!
         complete_frame = np.zeros(frame.size * self.n_t, dtype=complex)
         for index, symbol in enumerate(frame):
             sm_symbol = [0] * (antenna_index - 1) + [symbol] + [0] * (self.n_t - antenna_index)
@@ -473,14 +442,7 @@ class ChannelEstimator:
         points = signal[: int(mid / 2)] * np.conj(signal[mid : int(mid / 2) + mid])
         #points = np.correlate(signal[: mid], signal[mid :], 'full')
         phase_difference = -np.angle(points)
-        """
-        plt.figure()
-        plt.title('Phase of the FLC')
-        #plt.plot(np.abs(y[receive_antenna]), 'm-<')
-        plt.plot(phase_difference, 'm-<')
-        plt.show()
-        """
-        return (np.mean(phase_difference) * self.sample_rate / (2 * np.pi * mid))
+        return np.mean(phase_difference) * self.sample_rate / (2 * np.pi * mid)
 
     def estimate_frame(self, signal):
         """ Function to synchronize a signal in the time domain. """
@@ -502,11 +464,15 @@ class ChannelEstimator:
     def sync_frequency_offset(self, signal, frequency_offset):
         """ Function to synchronize a signal with a given frequency offset. """
         for index, element in enumerate(signal):
-                signal[index] = element * np.exp(-2j * np.pi * frequency_offset * index / self.sample_rate)
+            signal[index] = element * np.exp(-2j * np.pi * frequency_offset
+                                             * index / self.sample_rate)
         return signal
 
     def extract_channel(self, correlated_channel_responses):
-        """ Function to estimate a channel based on a correlation representing a channel response. """
+        """
+        DEPRECATED: Use extract_channel_response for current implementation.
+        Function to estimate a channel based on a correlation representing a channel response.
+        """
         channel_matrix = np.array([])
         sub_matrices = dict()
         channel_list = []
@@ -519,7 +485,6 @@ class ChannelEstimator:
             for val in antenna_response:
                 if val > threshold:
                     multipaths[index].append(val / best_path)
-        # DIFFERENT NUMBER OF MULTI-PATHS FOR DIFFERENT N_t NOT TAKEN INTO ACCOUNT.
         nb_multipaths = int(np.ceil(len(multipaths[0]) / self.n_r))
         # Create list of lists: Each sub-list represents a multi-path.
         for path in range(0, nb_multipaths):
@@ -546,66 +511,69 @@ class ChannelEstimator:
                 channel_matrix[index + element, :, element, :] = sub_matrix
         # Flatten the 4-dimensional matrix.
         channel_matrix.shape = (nb_rows * self.n_r, nb_columns * self.n_t)
-        #print(nb_multipaths)
         return channel_matrix
 
     def extract_channel_response(self, channel_responses, response_to_use):
         """ Extract the channel impulse response vector corresponding to a transmit antenna. """
-        #n_r = channel_responses.shape[0]
         # Extract actual multi-paths for each reception antenna.
-        # Create list of lists of lists indicating the value and position of the multi-path.
+        # Create list of lists of lists indicating the value and position of the multipath.
         multipaths = []
         counter = []
-        for ra in range(0, self.n_r):
-            antenna_response = channel_responses[ra][response_to_use]
+        for rx_antenna in range(0, self.n_r):
+            antenna_response = channel_responses[rx_antenna][response_to_use]
             multipaths.append([])
             counter.append(0)
-            #best_path = max(antenna_response)
             threshold = 0.05
             for index, val in enumerate(antenna_response):
                 abs_val = np.absolute(val)
                 if abs_val > threshold:
-                    multipaths[ra].append([val, index])
-                    counter[ra] += 1
+                    multipaths[rx_antenna].append([val, index])
+                    counter[rx_antenna] += 1
             # If not multipath has been found: add path of value zero.
-            if not multipaths[ra]:
-                multipaths[ra].append([0.0, 0])
-                counter[ra] += 1
+            if not multipaths[rx_antenna]:
+                multipaths[rx_antenna].append([0.0, 0])
+                counter[rx_antenna] += 1
                 fastest_path = 0
             else:
-                fastest_path = multipaths[ra][0][1]
-            for path in multipaths[ra]:
+                fastest_path = multipaths[rx_antenna][0][1]
+            for path in multipaths[rx_antenna]:
                 path[1] = path[1] - fastest_path
                 # Changes for each multipath, should provide longest distance.
                 longest_distance = path[1] - fastest_path
             for index in range(0, longest_distance):
-                if index not in [x[1] for x in multipaths[ra]]: #for path in multipaths[ra]:
-                    multipaths[ra].append([0.0, index])
-            multipaths[ra].sort(key=lambda x: int(x[1]))
+                if index not in [x[1] for x in multipaths[rx_antenna]]:
+                    multipaths[rx_antenna].append([0.0, index])
+            multipaths[rx_antenna].sort(key=lambda x: int(x[1]))
         nb_multipaths = max(counter)
-        #print(nb_multipaths)
-        #print(multipaths[0][: 10])
         # Vectors have to be of size ((K + P - 1) * N_r,).
-        channel_vector = np.zeros((self.n_r * (self.frame_length + nb_multipaths - 1)), dtype=complex)
-        for ra in range(0, self.n_r):
-            for index, val in enumerate(multipaths[ra]):
-                channel_vector[index * self.n_r + ra] = val[0]
+        channel_vector = np.zeros((self.n_r * (self.frame_length + nb_multipaths - 1)),
+                                  dtype=complex)
+        for rx_antenna in range(0, self.n_r):
+            for index, val in enumerate(multipaths[rx_antenna]):
+                channel_vector[index * self.n_r + rx_antenna] = val[0]
         return channel_vector
 
-    def recreate_channel(self, correlated_channel_responses):
-        """ Function to estimate a channel based on a correlation representing a channel response. """
-        # Different reception antennas can have a different amount of multi-paths.
-        max_multipaths = max([response.size for response in correlated_channel_responses])
-        for index, response in enumerate(correlated_channel_responses):
-            while correlated_channel_responses[index].size < max_multipaths:
-                correlated_channel_responses[index] = np.concatenate((correlated_channel_responses[index], np.zeros(1)))
-        channel_matrix = np.zeros((max_multipaths, self.frame_length * len(correlated_channel_responses)), dtype=complex)
+    def recreate_channel(self, corr_channel_responses):
+        """
+        Function to estimate a channel based on a correlation representing a channel response.
+        """
+        # Different reception antennas can have a different amount of multipaths.
+        max_multipaths = max([response.size for response in corr_channel_responses])
+        for index, response in enumerate(corr_channel_responses):
+            while corr_channel_responses[index].size < max_multipaths:
+                corr_channel_responses[index] = np.concatenate((corr_channel_responses[index],
+                                                                np.zeros(1)))
+        channel_matrix = np.zeros((max_multipaths,
+                                   self.frame_length * len(corr_channel_responses)),
+                                  dtype=complex)
         # Fill first column of Block-Toeplitz-Matrix.
-        for index, column in enumerate(correlated_channel_responses):
+        for index, column in enumerate(corr_channel_responses):
             #print(column.size)
             channel_matrix[:, index] = column
         # Fill the following columns with a rotation of the first.
         for symbol in range(1, self.frame_length):
-            for index, column in enumerate(correlated_channel_responses):
-                channel_matrix[:, len(correlated_channel_responses) * symbol + index] = np.roll(column, self.n_r * symbol)
+            for index, column in enumerate(corr_channel_responses):
+                channel_matrix[:, len(corr_channel_responses) * symbol + index] = np.roll(column,
+                                                                                          self.n_r
+                                                                                          * symbol)
         return channel_matrix

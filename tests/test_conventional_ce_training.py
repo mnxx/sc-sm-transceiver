@@ -51,13 +51,13 @@ def main():
     detector = det(setup, m)
 
     # Simulate the channel estimation.
-    channel_estimator = ce(setup, k)
+    channel_estimator = ce(setup, k, 1, 1)
 
     # LOOP FOR TESTING PURPOSES.
     rounds = 1
     # BER is measured for the following SNRs.
-    steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-    #steps = [20]
+    #steps = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    steps = [40]
     # The resulting BER values are stored in a list.
     points = []
     for step in steps:
@@ -76,9 +76,10 @@ def main():
             training_blocks = transceiver.training_data_to_blocks(seq)
             symbols = modulation.modulate(training_blocks)
             tx_frames = transceiver.training_symbols_to_frames(symbols)
+            #print(tx_frames[0][1018 : 1025])
             channel.create_channel_matrix()
             for tx_frame in tx_frames:
-                rx_frame = channel.apply_channel(tx_frame)
+                rx_frame = channel.apply_channel_without_awgn(tx_frame)
                 # Detect with predefined channel estimation.
                 #detected_frame = detector.detect(k,
                  #                                transceiver.get_symbol_list(),
@@ -118,26 +119,32 @@ def main():
                 #print(seq[antenna + 2][100 : 110])
                 #print(rx_gold[100 : 110])
                 #channel_response.append(np.roll(np.correlate(modulation.modulate(seq[antenna + 2]), rx_gold).real, int(len(seq[antenna + 2]) / 2 - 1)))
-                channel_response.append(np.absolute(np.correlate(rx_gold, gold, mode='same').real))
+                channel_response.append((np.correlate(rx_gold, gold, mode='same')))
                 #channel_response.append(channel_estimator.ccorr(gold, gold[: 2048]))
                 #(np.roll(ccorr(g0, g0).real, int(len(g0)/2-1))))
             #print(channel.get_channel_matrix())
             plt.figure()
-            plt.subplot(2,2,1)
-            plt.title('Cross-correlation: Antenna [0]')
-            plt.plot(channel_response[0])
+            plt.subplot(2,1,1)
+            plt.title('Cross-correlation: Conventional Scheme')
+            plt.plot(channel_response[0] / 256)
             #plt.axis([-100, 1100, -100, 1100])
-            plt.subplot(2,2,2)
-            plt.title('Cross-correlation: Antenna [1]')
-            plt.plot(channel_response[1])
+            #plt.subplot(2,1,2)
+            #plt.title('Cross-correlation: Conventional Scheme')
+            #plt.plot(channel_response[1])
             #plt.axis([-100, 1100, -100, 1100])
-            plt.subplot(2,2,3)
-            plt.title('Cross-correlation: Antenna [0]')
-            plt.plot(channel_response[0][250 : 265])
-            plt.subplot(2,2,4)
-            plt.title('Cross-correlation: Antenna [1]')
-            plt.plot(channel_response[1][250 : 265])
-            plt.show()
+            plt.grid()
+            plt.subplot(2,1,2)
+            #plt.title('Cross-correlation: Antenna [0]')
+            plt.plot(channel_response[0][240 : 275] / 256)
+            #plt.subplot(2,2,4)
+            #plt.title('Cross-correlation: Antenna [1]')
+            #plt.plot(channel_response[1][250 : 265])
+            #plt.show()
+            plt.xlabel('Taps / 100ns')
+            plt.grid()
+            from matplotlib2tikz import save as tikz_save
+            tikz_save('../master-thesis/figures/conv_ce.tex', figureheight='5cm', figurewidth='15cm');
+            exit()
             est_channel = channel_estimator.extract_channel(channel_response)
             #est_channel = channel.get_ce_error_matrix(17)
             #print(est_channel)
