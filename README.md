@@ -19,5 +19,5 @@ For a more conclusive analysis of the overall scheme and its detector, different
 - `test_system.py` - test the complete transmission scheme.
 - `test_unfiltered.py` - test the complete transmission sans filters.
 
-### Folder 'tests'
+### Folder `tests`
 This folder contains tests for previous steps in the development.
